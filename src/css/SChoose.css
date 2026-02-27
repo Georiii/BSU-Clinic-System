@@ -1,0 +1,157 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #e5e7eb;
+}
+
+.main-container {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.close-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: none;
+    border: none;
+    font-size: 32px;
+    font-weight: bold;
+    color: #000;
+    cursor: pointer;
+    line-height: 1;
+    padding: 5px 10px;
+    transition: transform 0.2s, color 0.2s;
+    z-index: 1001; 
+}
+
+.close-btn:hover {
+    color: #858080; 
+    transform: scale(1.2);
+}
+
+.emerald-card {
+    position: relative;
+    background-color: #50C878;
+    width: 90%;
+    max-width: 1100px;
+    min-height: 550px;
+    border-radius: 40px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;     
+    padding: 40px;
+    overflow: hidden;
+}
+
+.welcome-text {
+    position: absolute;
+    top: 40px;           
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+}
+
+.logo {
+    position: absolute;
+    width: 400px; 
+    height: 400px;
+    object-fit: contain;
+}
+
+.logo-left { left: -90px; top: -100px;  }
+.logo-right { right: -80px; top: -110px;  }
+
+.welcome-text h1 {
+    text-align: center;
+    font-size: 40px;
+    font-weight: 800;
+    color: #000;
+    line-height: 1.2;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+/* --- UPDATED DROPDOWN SECTION --- */
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* Custom CSS Arrow */
+.dropdown::after {
+    content: "";
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 7px solid #333;
+    transition: transform 0.3s ease; 
+    pointer-events: none;
+}
+
+
+.dropdown.active::after {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.dropdown-btn {
+    padding: 12px 40px 12px 20px; 
+    cursor: pointer;
+    background-color: white; 
+    border: 1px solid #ccc; 
+    border-radius: 15px; 
+    font-size: 16px;
+    font-weight: 600;
+    color: #A29C9C;
+    transition: all 0.2s ease;
+    min-width: 200px; 
+    text-align: left;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.dropdown-btn:hover {
+    background-color: #f9f9f9;
+    border-color: #999;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    background-color: white;
+    min-width: 100%; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    margin-top: 5px;
+    z-index: 1000;
+    overflow: hidden; 
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 12px 20px;
+    text-decoration: none;
+    color: black;
+    font-size: 14px;
+}
+
+.dropdown-menu a:hover {
+    background-color: #f2f2f2;
+}
+
+.show {
+    display: block;
+}
