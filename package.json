@@ -11,6 +11,15 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "express": "^5.2.1"
-  }
+    "express": "^5.2.1",
+    "mysql2": "^3.18.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Georiii/BSU-Clinic-System.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Georiii/BSU-Clinic-System/issues"
+  },
+  "homepage": "https://github.com/Georiii/BSU-Clinic-System#readme"
 }

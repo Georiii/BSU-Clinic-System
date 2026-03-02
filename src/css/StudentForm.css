@@ -1,0 +1,124 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background-color: #e5e7eb;
+}
+
+.main-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.emerald-card {
+    background-color: #50C878;
+    width: 90%;
+    max-width: 900px;
+    border-radius: 40px;
+    padding: 50px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.form-title {
+    text-align: center;
+    font-size: 32px;
+    margin-bottom: 30px;
+    color: #000;
+}
+
+.close-btn {
+    position: absolute;
+    top: 25px;
+    left: 25px;
+    background: none;
+    border: none;
+    font-size: 35px;
+    cursor: pointer;
+}
+
+.student-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.input-group label {
+    width: 150px;
+    font-weight: 600;
+    font-size: 18px;
+    color: #000;
+}
+
+.input-group input, .input-group select {
+    flex: 1;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 12px;
+    background-color: #f1f3f5;
+    font-size: 16px;
+}
+
+.right-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.purpose-header {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 25px;
+}
+
+.checkbox-list label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 16px;
+    margin-bottom: 15px;
+    cursor: pointer;
+}
+
+.radio-sub-list {
+    margin-left: 35px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.specify-box {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background-color: #f1f3f5;
+}
+
+.submit-btn {
+    margin: 40px auto 0 auto;
+    background-color: #FFCC00; /* Yellow Submit button */
+    color: black;
+    border: none;
+    padding: 15px 60px;
+    border-radius: 15px;
+    font-size: 22px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+.submit-btn:hover {
+    background-color: #f0c000;
+    transform: scale(1.05);
+}

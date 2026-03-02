@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Medical Form</title>
+    <link rel="stylesheet" href="../css/StudentForm.css">
+</head>
+<body>
+    <div class="main-container">
+        <div class="emerald-card">
+            <button id="closeBtn" class="close-btn">&times;</button>
+            <h1 class="form-title">Student Form</h1>
+
+            <form class="student-form-grid">
+                <div class="form-column">
+                    <div class="input-group">
+                        <label>SR CODE:</label>
+                        <input type="text" placeholder="SR-Code">
+                    </div>
+                    <div class="input-group">
+                        <label>DATE:</label>
+                        <input type="text" placeholder="Date">
+                    </div>
+                    <div class="input-group">
+                        <label>TIME IN:</label>
+                        <input type="text" placeholder="Time In">
+                    </div>
+                    <div class="input-group">
+                        <label>TIME OUT:</label>
+                        <input type="text" placeholder="Time Out">
+                    </div>
+                    <div class="input-group">
+                        <label>NAME:</label>
+                        <input type="text" placeholder="Name">
+                    </div>
+                    <div class="input-group">
+                        <label>DEPARTMENT:</label>
+                        <input type="text" placeholder="Department">
+                    </div>
+                    <div class="input-group">
+                        <label>PROGRAM:</label>
+                        <input type="text" placeholder="Program">
+                    </div>
+                    <div class="input-group">
+                        <label>BIRTHDAY:</label>
+                        <select>
+                            <option>mm/dd/yy</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>AGE:</label>
+                        <input type="text" placeholder="Age">
+                    </div>
+                    <div class="input-group">
+                        <label>GENDER:</label>
+                        <select>
+                            <option>Gender</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>SPECIAL NEEDS:</label>
+                        <select>
+                            <option>Choose..</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-column right-column">
+                    <h3 class="purpose-header">PURPOSE OF VISIT:</h3>
+                    
+                    <div class="checkbox-list">
+                        <label><input type="checkbox"> Medical Consult/Medicine</label>
+                        <label><input type="checkbox"> Dental</label>
+                        <label><input type="checkbox"> Medical Certificate</label>
+                        
+                        <div class="radio-sub-list">
+                            <label><input type="radio" name="cert"> Tour/ Local Off-Campus</label>
+                            <label><input type="radio" name="cert"> OJT/ Pre Employment</label>
+                            <label><input type="radio" name="cert"> Pre-Athletic</label>
+                            <label><input type="radio" name="cert"> Pre-Enrolment</label>
+                        </div>
+
+                        <label><input type="checkbox"> Others</label>
+                        <input type="text" placeholder="Specify" class="specify-box">
+                    </div>
+
+                    <button type="submit" class="submit-btn">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="../js/StudentForm.js"></script>
+</body>
+</html>
