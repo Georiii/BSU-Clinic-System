@@ -67,6 +67,25 @@ body, html {
     border-radius: 12px;
     background-color: #f1f3f5;
     font-size: 16px;
+    /* Changed text color to Gray */
+    color: #000000; 
+}
+
+/* Updates placeholder text to be a lighter gray */
+::placeholder {
+    color: #999999;
+    opacity: 1; 
+}
+
+#visitDate, #timeIn, #timeOut {
+    background-color: #dadbdc !important;
+    pointer-events: none; 
+    user-select: none;    
+}
+
+input[readonly] {
+    background-color: #dadbdc;
+    cursor: not-allowed;
 }
 
 .right-column {
@@ -99,15 +118,31 @@ body, html {
 
 .specify-box {
     width: 100%;
-    padding: 10px;
+    padding: 10px 15px;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     background-color: #f1f3f5;
+    font-size: 16px;
+    box-sizing: border-box;
+    /* Added gray color for the 'Others' specify box */
+    color: #666666; 
+}
+
+#certTypeGroup, #othersSpecifyGroup, #otherNeedsGroup {
+    transition: all 0.3s ease-in-out;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .submit-btn {
-    margin: 40px auto 0 auto;
-    background-color: #FFCC00; /* Yellow Submit button */
+    grid-column: 1 / -1; 
+    margin: 40px auto 0 auto; 
+    display: block;
+    background-color: #FFCC00; 
     color: black;
     border: none;
     padding: 15px 60px;
@@ -116,6 +151,7 @@ body, html {
     font-weight: 800;
     cursor: pointer;
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
 }
 
 .submit-btn:hover {

@@ -12,81 +12,100 @@
             <button id="closeBtn" class="close-btn">&times;</button>
             <h1 class="form-title">Student Form</h1>
 
-            <form class="student-form-grid">
+            <form class="student-form-grid" id="medicalForm">
                 <div class="form-column">
                     <div class="input-group">
                         <label>SR CODE:</label>
-                        <input type="text" placeholder="SR-Code">
+                        <input type="text" id="srcode" placeholder="SR-Code">
                     </div>
                     <div class="input-group">
                         <label>DATE:</label>
-                        <input type="text" placeholder="Date">
+                        <input type="date" id="visitDate" readonly onfocus="this.blur()">
                     </div>
                     <div class="input-group">
                         <label>TIME IN:</label>
-                        <input type="text" placeholder="Time In">
+                        <input type="time" id="timeIn" readonly onfocus="this.blur()">
                     </div>
                     <div class="input-group">
                         <label>TIME OUT:</label>
-                        <input type="text" placeholder="Time Out">
+                        <input type="time" id="timeOut" autocomplete="off" readonly onfocus="this.blur()" style="pointer-events: none;">
                     </div>
                     <div class="input-group">
                         <label>NAME:</label>
-                        <input type="text" placeholder="Name">
+                        <input type="text" id="name" placeholder="Name" readonly>
                     </div>
                     <div class="input-group">
                         <label>DEPARTMENT:</label>
-                        <input type="text" placeholder="Department">
+                        <input type="text" id="department" placeholder="Department" readonly>
                     </div>
                     <div class="input-group">
                         <label>PROGRAM:</label>
-                        <input type="text" placeholder="Program">
+                        <input type="text" id="program" placeholder="Program" readonly>
                     </div>
                     <div class="input-group">
                         <label>BIRTHDAY:</label>
-                        <select>
-                            <option>mm/dd/yy</option>
-                        </select>
-                    </div>
+                        <input type="date" id="birthday">
+                    </div>  
                     <div class="input-group">
                         <label>AGE:</label>
-                        <input type="text" placeholder="Age">
+                        <input type="text" id="age" placeholder="Age" readonly>
                     </div>
                     <div class="input-group">
                         <label>GENDER:</label>
-                        <select>
-                            <option>Gender</option>
+                        <select name="Gender" id="gender">
+                            <option value="">Choose gender...</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                            <option value="Prefer not to say">Prefer not to say</option>
                         </select>
                     </div>
                     <div class="input-group">
                         <label>SPECIAL NEEDS:</label>
-                        <select>
-                            <option>Choose..</option>
+                        <select id="specialNeeds" placeholder="Choose special needs...">
+                            <option value="">Choose special needs...</option>
+                            <option value="None">None</option>
+                            <option value="Pwd">Pwd</option>
+                            <option value="Other">Other</option>
                         </select>
+                    </div>
+                    <div class="input-group" id="otherNeedsGroup" style="display: none;">
+                        <label>SPECIFY:</label>
+                        <input type="text" id="specialNeedsOther" placeholder="Please specify">
                     </div>
                 </div>
 
                 <div class="form-column right-column">
                     <h3 class="purpose-header">PURPOSE OF VISIT:</h3>
-                    
-                    <div class="checkbox-list">
-                        <label><input type="checkbox"> Medical Consult/Medicine</label>
-                        <label><input type="checkbox"> Dental</label>
-                        <label><input type="checkbox"> Medical Certificate</label>
                         
-                        <div class="radio-sub-list">
-                            <label><input type="radio" name="cert"> Tour/ Local Off-Campus</label>
-                            <label><input type="radio" name="cert"> OJT/ Pre Employment</label>
-                            <label><input type="radio" name="cert"> Pre-Athletic</label>
-                            <label><input type="radio" name="cert"> Pre-Enrolment</label>
+                        <div class="input-group">
+                            <label>SELECT PURPOSE:</label>
+                            <select id="purposeSelect">
+                                <option value="">Choose purpose...</option>
+                                <option value="Medical Consult">Medical Consult/Medicine</option>
+                                <option value="Dental">Dental</option>
+                                <option value="Medical Certificate">Medical Certificate</option>
+                                <option value="Others">Others</option>
+                            </select>
                         </div>
-
-                        <label><input type="checkbox"> Others</label>
-                        <input type="text" placeholder="Specify" class="specify-box">
+                    
+                        <div id="certTypeGroup" style="display: none; margin-top: 15px;">
+                            <label class="purpose-header" style="font-size: 16px; display: block; margin-bottom: 10px;">CERTIFICATE TYPE:</label>
+                            <div class="radio-sub-list">
+                                <label><input type="radio" name="cert_type" value="Tour"> Tour/ Local Off-Campus</label>
+                                <label><input type="radio" name="cert_type" value="OJT"> OJT/ Pre-Employment</label>
+                                <label><input type="radio" name="cert_type" value="Athletic"> Pre-Athletic</label>
+                                <label><input type="radio" name="cert_type" value="Enrolment"> Pre-Enrolment</label>
+                            </div>
+                        </div>
+                    
+                        <div id="othersSpecifyGroup" style="display: none; margin-top: 15px;">
+                            <label class="purpose-header" style="font-size: 16px; display: block; margin-bottom: 10px;">SPECIFY OTHER:</label>
+                            <input type="text" id="others_specify" placeholder="Please specify..." class="specify-box">
+                        </div>
                     </div>
 
-                    <button type="submit" class="submit-btn">Submit</button>
-                </div>
+                <button type="submit" class="submit-btn">Submit</button>
             </form>
         </div>
     </div>
