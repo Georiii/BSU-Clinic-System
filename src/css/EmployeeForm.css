@@ -1,0 +1,156 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background-color: #e5e7eb;
+}
+
+.main-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.emerald-card {
+    background-color: #50C878;
+    width: 92%;
+    max-width: 1050px;
+    border-radius: 40px;
+    padding: 42px 48px 48px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.form-title {
+    text-align: center;
+    font-size: 32px;
+    margin: 0 0 26px;
+    color: #000;
+    font-weight: 400;
+}
+
+.close-btn {
+    position: absolute;
+    top: 22px;
+    left: 26px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #000;
+    padding: 6px 10px;
+    line-height: 1;
+}
+
+.employee-form-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 42px;
+    align-items: start;
+}
+
+.form-column {
+    min-width: 0;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 14px;
+}
+
+.input-group label {
+    width: 170px;
+    font-weight: 400;
+    font-size: 16px;
+    color: #000;
+    text-transform: none;
+}
+
+.input-group input,
+.input-group select {
+    flex: 1;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    background-color: #f1f3f5;
+    font-size: 15px;
+    color: #000;
+    box-sizing: border-box;
+}
+
+::placeholder {
+    color: #999999;
+    opacity: 1;
+}
+
+#visitDate, #timeIn, #timeOut,
+input[readonly] {
+    background-color: #dadbdc !important;
+    cursor: not-allowed;
+}
+
+.right-column {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.purpose-header {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 25px;
+    font-weight: 400;
+}
+
+.radio-sub-list {
+    margin: 6px 0 14px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.specify-box {
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    background-color: #f1f3f5;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+#certTypeGroup, #otherNeedsGroup, #othersSpecifyGroup {
+    transition: all 0.3s ease-in-out;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.submit-btn {
+    grid-column: 1 / -1;
+    margin: 14px auto 0;
+    display: block;
+    background-color: #FFCC00;
+    color: black;
+    border: none;
+    padding: 14px 70px;
+    border-radius: 6px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+}
+
+.submit-btn:hover {
+    background-color: #f0c000;
+    transform: scale(1.03);
+}

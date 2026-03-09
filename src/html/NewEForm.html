@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Registration</title>
+    <link rel="stylesheet" href="../css/NewEForm.css">
+</head>
+<body>
+    <div class="main-container">
+        <div class="registration-card">
+            <button id="closeBtn" class="close-btn">&times;</button>
+            <h1 class="form-title">Employee Registration</h1>
+
+            <form id="registrationForm">
+                <div class="input-group">
+                    <label for="employee_id">ID Number:</label>
+                    <input type="text" placeholder="ID Number" id="employee_id" required autocomplete="off">
+                </div>
+
+                <div class="input-group">
+                    <label for="fullname">Fullname:</label>
+                    <input type="text" placeholder="Fullname" id="fullname" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="department">Office:</label>
+                    <input type="text" placeholder="Office" id="department" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="position">Position:</label>
+                    <input type="text" placeholder="Position" id="position" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="employment_type">Employment Type:</label>
+                    <select id="employment_type" required>
+                        <option value="" disabled selected>Select Type</option>
+                        <option value="Teaching">Teaching</option>
+                        <option value="Non-Teaching">Non-Teaching</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="employment_status">Employment Status:</label>
+                    <select id="employment_status" required>
+                        <option value="" disabled selected>Select Status</option>
+                        <option value="Casual">Casual</option>
+                        <option value="Temporary">Temporary</option>
+                        <option value="Permanent">Permanent</option>
+                        <option value="Contractual">Contractual</option>
+                        <option value="Job order">Job order</option>
+                        <option value="COS">COS</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="submit-btn">Submit</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="successModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="icon-circle">
+                <span class="check-mark">&#10003;</span>
+            </div>
+            <h2>Registered Successfully!</h2>
+            <button id="doneBtn" class="done-btn">Done</button>
+        </div>
+    </div>
+
+    <script src="../js/NewEForm.js"></script>
+</body>
+</html>

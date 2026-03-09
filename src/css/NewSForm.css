@@ -1,0 +1,104 @@
+body {
+    background-color: #f0f2f5;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.registration-card {
+    background-color: #58cc71;
+    padding: 30px;
+    border-radius: 20px;
+    width: 450px;
+    position: relative;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+}
+
+.form-title {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 25px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    width: 140px;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.input-group input, .input-group select {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+    background-color: white;
+}
+
+.submit-btn {
+    display: block;
+    width: 120px;
+    margin: 20px auto 0;
+    padding: 10px;
+    background-color: #ffcc00;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Modal Popup Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    width: 320px;
+}
+
+.icon-circle {
+    width: 60px; height: 60px;
+    background: #58cc71; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    margin: 0 auto 20px;
+}
+
+.check-mark { color: white; font-size: 35px; }
+
+.done-btn {
+    background: #58cc71; color: white;
+    border: none; padding: 10px 40px;
+    border-radius: 5px; font-size: 16px;
+    font-weight: bold; cursor: pointer;
+    margin-top: 20px;
+}

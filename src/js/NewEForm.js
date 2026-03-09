@@ -1,0 +1,50 @@
+const registrationForm = document.getElementById('registrationForm');
+const successModal = document.getElementById('successModal');
+const doneBtn = document.getElementById('doneBtn');
+
+registrationForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById('fullname').value; // Get name for the personalized message
+    const formData = {
+        employee_id: document.getElementById('employee_id').value,
+        fullname: name,
+        department: document.getElementById('department').value,
+        position: document.getElementById('position').value,
+        employment_type: document.getElementById('employment_type').value,
+        employment_status: document.getElementById('employment_status').value
+    };
+
+    try {
+        const response = await fetch('/api/register-employee', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+            // Update modal text with personalized message
+            const modalTitle = successModal.querySelector('h2');
+            modalTitle.textContent = `You registered successfully, ${name}!`;
+            
+            successModal.style.display = 'flex';
+
+            // Automatic redirection after 5 seconds
+            setTimeout(() => {
+                window.location.href = '/choose';
+            }, 5000);
+        } else {
+            alert("Error: Registration failed. ID might already exist.");
+        }
+    } catch (error) {
+        console.error("Error:", error);
+    }
+});
+
+doneBtn.addEventListener('click', () => {
+    window.location.href = '/choose';
+});
+
+document.getElementById('closeBtn').addEventListener('click', () => {
+    window.location.href = '/choose';
+});

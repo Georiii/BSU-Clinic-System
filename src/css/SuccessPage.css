@@ -1,0 +1,56 @@
+/* SuccessPage.css */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #e5e7eb; /* Matching the system's background */
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+.success-container {
+    background-color: #50C878; /* Emerald Green */
+    border-radius: 30px;
+    padding: 60px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    position: relative;
+    max-width: 450px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.close-button {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #000;
+}
+
+.icon-container {
+    margin-bottom: 20px;
+}
+
+.icon-container img {
+    width: 120px; /* Adjusting to match the image proportion */
+    height: auto;
+}
+
+h1 {
+    font-size: 32px;
+    color: #000;
+    margin: 0;
+}

@@ -20,19 +20,21 @@ window.addEventListener("click", function(e) {
 // Navigation Logic
 menu.addEventListener("click", function(e) {
   const target = e.target;
-  
-  // Prevent the default '#' link behavior
   e.preventDefault();
 
-  // Convert text to lowercase and check against lowercase strings
   const text = target.textContent.toLowerCase();
   
-  if (text.includes("student")) {
+  if (text.includes("new student")) {
+    window.location.href = "/html/NewSForm.html";
+  } else if (text.includes("new employee")) {
+    window.location.href = "/html/NewEForm.html";
+  } else if (text.includes("student")) {
     window.location.href = "/html/StudentForm.html";
   } else if (text.includes("employee")) {
     window.location.href = "/html/EmployeeForm.html";
-  }
+  } 
 });
+
 
 const closeBtn = document.getElementById("closeBtn");
 
