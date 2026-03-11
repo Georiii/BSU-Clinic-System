@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Out Form</title>
+    <link rel="stylesheet" href="../css/TimeoutForm.css">
+</head>
+<body>
+    <div class="main-container">
+        <div class="timeout-card">
+            <button class="close-btn" onclick="window.location.href='/choose'">X</button>
+            <h1 id="formTitle">Time Out Form (Students)</h1>
+
+            <div class="table-controls">
+                <div class="search-container">
+                    <label>Search:</label>
+                    <input type="text" id="searchInput" placeholder="SR-Code or ID Number">
+                    <span class="search-icon">🔍</span>
+                </div>
+                <button id="toggleTableBtn" class="toggle-btn">Switch to Employee</button>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="timeoutTable">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th id="idHeader">SR-Code</th>
+                            <th>Name</th>
+                            <th>Time In</th>
+                            <th>Time Out</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="../js/TimeoutForm.js"></script>
+</body>
+</html>

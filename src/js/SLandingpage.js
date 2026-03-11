@@ -10,7 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (timeoutBtn) {
         timeoutBtn.addEventListener('click', () => {
-            alert("Time Out Recorded!");
+            // Redirects to the Time Out Form page
+            window.location.href = '/html/TimeoutForm.html';
         });
     }
 });
