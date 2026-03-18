@@ -18,31 +18,33 @@ function calculateAge(birthDateValue) {
 }
 
 // 2. Logic for SR Code Auto-fill
-srInput.addEventListener('blur', async () => {
-    const code = srInput.value.trim();
-    if (!code) return;
+if (srInput) {
+    srInput.addEventListener('blur', async () => {
+        const code = srInput.value.trim();
+        if (!code) return;
 
-    try {
-        const response = await fetch(`/api/student/${code}`);
-        
-        if (response.ok) {
-            const data = await response.json();
+        try {
+            const response = await fetch(`/api/student/${code}`);
             
-            document.getElementById('name').value = data.fullname;
-            document.getElementById('department').value = data.department;
-            document.getElementById('program').value = data.program;
+            if (response.ok) {
+                const data = await response.json();
+                
+                document.getElementById('name').value = data.fullname;
+                document.getElementById('department').value = data.department;
+                document.getElementById('program').value = data.program;
 
-            if (data.birthday) {
-                document.getElementById('birthday').value = data.birthday;
-                document.getElementById('age').value = calculateAge(data.birthday);
+                if (data.birthday) {
+                    document.getElementById('birthday').value = data.birthday;
+                    document.getElementById('age').value = calculateAge(data.birthday);
+                }
+            } else {
+                alert("SR Code not found in the master list.");
             }
-        } else {
-            alert("SR Code not found in the master list.");
+        } catch (error) {
+            console.error("Connection error:", error);
         }
-    } catch (error) {
-        console.error("Connection error:", error);
-    }
-});
+    });
+}
 
 // 3. Logic for Manual Birthday Change
 if (birthdayInput) {
@@ -115,18 +117,54 @@ if (purposeSelect) {
     });
 }
 
-// 8. Form Submission with Validation and Visual Warnings
+// Added Signature Logic
+const canvas = document.getElementById('signatureCanvas');
+if (canvas) {
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+
+    canvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+        if (e.button === 2 || e.button === 0) {
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.offsetX, e.offsetY);
+        }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (isDrawing) {
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.stroke();
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+        }
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDrawing = false;
+    });
+
+    document.getElementById('clearSignatureBtn').addEventListener('click', () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); 
+    });
+}
+
+// 8. Form Submission
 const medicalForm = document.getElementById('medicalForm');
 if (medicalForm) {
     medicalForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // RESET BORDERS: Clear previous red borders
+        // RESET BORDERS
         document.querySelectorAll('input, select').forEach(el => {
             el.style.border = 'none';
         });
 
-        // VALIDATION: Check standard required fields
+        // VALIDATION
         const requiredFields = [
             { id: 'srcode', name: 'SR Code' },
             { id: 'birthday', name: 'Birthday' },
@@ -144,7 +182,6 @@ if (medicalForm) {
             }
         }
 
-        // VALIDATION: Conditional fields
         if (specialNeedsSelect.value === 'Other') {
             const otherInput = document.getElementById('specialNeedsOther');
             if (!otherInput.value.trim()) {
@@ -174,12 +211,17 @@ if (medicalForm) {
             return;
         }
 
-        // Prepare data matching your updated phpMyAdmin structure
+        // Capture signature data
+        const signatureData = canvas ? canvas.toDataURL() : null;
+        if (document.getElementById('signatureData')) {
+            document.getElementById('signatureData').value = signatureData;
+        }
+
         const formData = {
             srcode: srInput.value,
-            fullname: document.getElementById('name').value,       // Captured for your database
-            department: document.getElementById('department').value, // Captured for your database
-            program: document.getElementById('program').value,       // Captured for your database
+            fullname: document.getElementById('name').value,       
+            department: document.getElementById('department').value, 
+            program: document.getElementById('program').value,       
             visit_date: document.getElementById('visitDate').value,
             time_in: document.getElementById('timeIn').value,
             time_out: document.getElementById('timeOut').value || null,
@@ -191,9 +233,12 @@ if (medicalForm) {
             purpose_dental: selectedPurpose === 'Dental' ? 1 : 0,
             purpose_med_cert: selectedPurpose === 'Medical Certificate' ? 1 : 0,
             purpose_pre_enrolment: selectedCertType === 'Enrolment' ? 1 : 0,
+            purpose_blood_pressure: selectedPurpose === 'Blood Pressure' ? 1 : 0, // NEW BLOOD PRESSURE TRACKING
             
             cert_type: selectedCertType,
-            purpose_others: selectedPurpose === 'Others' ? document.getElementById('others_specify').value : null
+            purpose_others: selectedPurpose === 'Others' ? document.getElementById('others_specify').value : null,
+            
+            signature: signatureData 
         };
 
         try {
@@ -204,7 +249,6 @@ if (medicalForm) {
             });
 
             if (response.ok) {
-                // Redirecting to the server-defined success route
                 window.location.href = '/success';
             } else {
                 alert("Error: Could not save visit data.");

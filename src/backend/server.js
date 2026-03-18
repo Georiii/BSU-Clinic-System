@@ -24,6 +24,7 @@ app.get('/success', (req, res) => { res.sendFile(path.join(__dirname, '..', 'htm
 app.get('/html/NewSForm.html', (req, res) => { res.sendFile(path.join(__dirname, '..', 'html', 'NewSForm.html')); });
 app.get('/html/NewEForm.html', (req, res) => { res.sendFile(path.join(__dirname, '..', 'html', 'NewEForm.html')); });
 app.get('/html/TimeoutForm.html', (req, res) => { res.sendFile(path.join(__dirname, '..', 'html', 'TimeoutForm.html')); });
+app.get('/html/VisitorForm.html', (req, res) => { res.sendFile(path.join(__dirname, '..', 'html', 'VisitorForm.html')); });
 
 // --- API ROUTES ---
 app.get('/api/student/:srcode', (req, res) => {
@@ -78,6 +79,21 @@ app.post('/api/submit-employee-visit', (req, res) => {
     });
 });
 
+// --- VISITOR API ROUTE ---
+app.post('/api/submit-visitor', (req, res) => {
+    const data = req.body;
+    
+    // The signature base64 data is included in req.body because you packaged it in VisitorForm.js
+    const sql = "INSERT INTO visitor_logs SET ?";
+    db.query(sql, data, (err) => {
+        if (err) {
+            console.error("Database Insert Error:", err);
+            return res.status(500).json(err);
+        }
+        res.status(200).json({ message: "Visitor recorded successfully!" });
+    });
+});
+
 app.post('/api/register-employee', (req, res) => {
     db.query("INSERT INTO employees SET ?", req.body, (err) => {
         if (err) return res.status(500).json(err);
@@ -129,12 +145,29 @@ app.post('/api/timeout-employee/:id', (req, res) => {
     });
 });
 
+// --- NEW TIME OUT API FOR VISITORS ---
+app.get('/api/active-visitor-visits', (req, res) => {
+    const sql = `SELECT visit_id, idNo, fullname, time_in, time_out 
+                 FROM visitor_logs 
+                 WHERE visit_date = CURDATE() ORDER BY time_in DESC`;
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json(err);
+        res.json(results);
+    });
+});
+
+app.post('/api/timeout-visitor/:id', (req, res) => {
+    const sql = "UPDATE visitor_logs SET time_out = CURTIME() WHERE visit_id = ?";
+    db.query(sql, [req.params.id], (err) => {
+        if (err) return res.status(500).json(err);
+        res.status(200).json({ message: "Visitor timed out" });
+    });
+});
+
 // --- SERVER START & AUTO-OPEN ---
 app.listen(PORT, '0.0.0.0', () => {
     const url = `http://localhost:${PORT}`;
     console.log(`Clinic System running at ${url}`);
-    
-    // Improved command to open browser on Windows
     exec(`start ${url}`, (err) => {
         if (err) console.error("Could not auto-open browser:", err);
     });

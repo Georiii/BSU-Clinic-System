@@ -133,6 +133,42 @@ if (purposeSelect) {
     });
 }
 
+// Added Signature Logic
+const canvas = document.getElementById('signatureCanvas');
+if (canvas) {
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+
+    canvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+        if (e.button === 2 || e.button === 0) {
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.offsetX, e.offsetY);
+        }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (isDrawing) {
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.stroke();
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+        }
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDrawing = false;
+    });
+
+    document.getElementById('clearSignatureBtn').addEventListener('click', () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); 
+    });
+}
+
 const form = document.getElementById('employeeForm');
 if (form) {
     form.addEventListener('submit', async (e) => {
@@ -144,6 +180,12 @@ if (form) {
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             timeOutField.value = `${hours}:${minutes}`;
+        }
+
+        // Process signature
+        const signatureData = canvas ? canvas.toDataURL() : null;
+        if (document.getElementById('signatureData')) {
+            document.getElementById('signatureData').value = signatureData;
         }
 
         const formData = {
@@ -163,7 +205,8 @@ if (form) {
             special_needs_specify: document.getElementById('specialNeedsOther')?.value || null,
             purpose_of_visit: document.getElementById('purposeSelect').value,
             certificate_type: document.querySelector('input[name="cert_type"]:checked')?.value || null,
-            others_specify: document.getElementById('others_specify')?.value || null
+            others_specify: document.getElementById('others_specify')?.value || null,
+            signature: signatureData // Sent to server
         };
 
         try {

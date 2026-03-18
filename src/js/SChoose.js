@@ -32,9 +32,11 @@ menu.addEventListener("click", function(e) {
     window.location.href = "/html/StudentForm.html";
   } else if (text.includes("employee")) {
     window.location.href = "/html/EmployeeForm.html";
-  } 
+  // NEW LOGIC ADDED BELOW
+  } else if (text.includes("visitor")) {
+    window.location.href = "/html/VisitorForm.html";
+  }
 });
-
 
 const closeBtn = document.getElementById("closeBtn");
 

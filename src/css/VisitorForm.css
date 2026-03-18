@@ -14,21 +14,14 @@ body, html {
     padding: 20px;
 }
 
-.emerald-card {
+.visitor-card {
     background-color: #50C878;
-    width: 90%;
+    width: 92%;
     max-width: 900px;
     border-radius: 40px;
-    padding: 50px;
+    padding: 42px 48px 48px;
     position: relative;
     box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-}
-
-.form-title {
-    text-align: center;
-    font-size: 32px;
-    margin-bottom: 30px;
-    color: #000;
 }
 
 .close-btn {
@@ -39,8 +32,8 @@ body, html {
     border: none;
     font-size: 22px;
     font-weight: 800;
-    color: #111;
     cursor: pointer;
+    color: #111;
     line-height: 1;
     padding: 0;
     transition: transform 0.15s ease, color 0.15s ease;
@@ -51,91 +44,95 @@ body, html {
     transform: scale(1.08);
 }
 
-.student-form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 50px;
+.form-title {
+    text-align: center;
+    font-size: 32px;
+    margin: 0 0 26px;
+    color: #000;
+    font-weight: 400;
+}
+
+.top-section {
+    display: flex;
+    gap: 42px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+}
+
+.left-col {
+    flex: 1.15;
+}
+
+.right-col {
+    flex: 0.85;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
 }
 
 .input-group {
     display: flex;
     align-items: center;
     margin-bottom: 12px;
+    gap: 14px;
 }
 
 .input-group label {
-    width: 150px;
-    font-weight: 600;
-    font-size: 18px;
+    width: 140px;
+    font-weight: 400;
+    font-size: 16px;
     color: #000;
 }
 
-.input-group input, .input-group select {
+.input-group input,
+.input-group select,
+.purpose-group select {
     flex: 1;
-    padding: 10px 15px;
+    padding: 10px 14px;
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     background-color: #f1f3f5;
-    font-size: 16px;
-    color: #000000; 
+    font-size: 15px;
+    color: #000;
+    box-sizing: border-box;
 }
 
-::placeholder {
-    color: #999999;
-    opacity: 1; 
-}
-
-#visitDate, #timeIn, #timeOut {
+#visitDate, #timeIn, #timeOut, #age,
+input.readonly-field {
     background-color: #dadbdc !important;
-    pointer-events: none; 
-    user-select: none;    
-}
-
-input[readonly] {
-    background-color: #dadbdc;
     cursor: not-allowed;
 }
 
-.right-column {
-    display: flex;
-    flex-direction: column;
-}
-
-.purpose-header {
+.purpose-group {
+    width: 100%;
     text-align: center;
+}
+
+.purpose-group label {
+    display: block;
     font-size: 22px;
-    margin-bottom: 25px;
-}
-
-.checkbox-list label {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 16px;
     margin-bottom: 15px;
-    cursor: pointer;
+    font-weight: 400;
 }
 
+/* NEW: Radio buttons and animations from EmployeeForm */
 .radio-sub-list {
-    margin-left: 35px;
-    margin-bottom: 20px;
+    margin: 6px 0 14px 28px;
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.specify-box {
-    width: 100%;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 12px;
-    background-color: #f1f3f5;
-    font-size: 16px;
-    box-sizing: border-box;
-    color: #666666; 
+.radio-sub-list label {
+    font-size: 15px;
+    color: #000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-#certTypeGroup, #othersSpecifyGroup, #otherNeedsGroup {
+#certTypeGroup, #otherNeedsGroup, #othersSpecifyGroup {
     transition: all 0.3s ease-in-out;
     animation: fadeIn 0.3s ease-in-out;
 }
@@ -145,10 +142,9 @@ input[readonly] {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Added Signature Styles */
+/* Signature Section */
 .signature-section {
-    grid-column: 1 / -1;
-    margin-top: 10px;
+    margin-top: 30px;
     text-align: center;
     display: flex;
     flex-direction: column;
@@ -186,17 +182,21 @@ canvas {
     background-color: #dadbdc;
 }
 
+.btn-container {
+    text-align: center;
+    margin-top: 30px;
+}
+
 .submit-btn {
-    grid-column: 1 / -1; 
-    margin: 30px auto 0 auto; 
     display: block;
-    background-color: #FFCC00; 
+    margin: 0 auto;
+    background-color: #FFCC00;
     color: black;
     border: none;
-    padding: 15px 60px;
-    border-radius: 15px;
-    font-size: 22px;
-    font-weight: 800;
+    padding: 14px 70px;
+    border-radius: 6px;
+    font-size: 18px;
+    font-weight: 700;
     cursor: pointer;
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     transition: all 0.2s ease;
@@ -204,5 +204,5 @@ canvas {
 
 .submit-btn:hover {
     background-color: #f0c000;
-    transform: scale(1.05);
+    transform: scale(1.03);
 }

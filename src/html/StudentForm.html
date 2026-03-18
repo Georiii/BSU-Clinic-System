@@ -86,6 +86,7 @@
                                 <option value="Dental">Dental</option>
                                 <option value="Medical Certificate">Medical Certificate</option>
                                 <option value="Enrolment">Pre-Enrolment</option>
+                                <option value="Blood Pressure">Blood Pressure</option>
                                 <option value="Others">Others</option>
                             </select>
                         </div>
@@ -104,6 +105,13 @@
                             <input type="text" id="others_specify" placeholder="Please specify..." class="specify-box">
                         </div>
                     </div>
+
+                <div class="signature-section">
+                    <canvas id="signatureCanvas" width="380" height="120"></canvas>
+                    <p>Please place your electronic signature above.</p>
+                    <button type="button" id="clearSignatureBtn" class="clear-btn">Clear Signature</button>
+                    <input type="hidden" id="signatureData" name="signatureData">
+                </div>
 
                 <button type="submit" class="submit-btn">Submit</button>
             </form>

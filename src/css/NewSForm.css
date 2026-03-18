@@ -21,11 +21,22 @@ body {
     position: absolute;
     top: 15px;
     left: 15px;
-    background: none;
+    width: 40px;
+    height: 40px;
+    background: transparent;
     border: none;
-    font-size: 24px;
+    font-size: 22px;
+    font-weight: 800;
     cursor: pointer;
-    color: #333;
+    color: #111;
+    line-height: 1;
+    padding: 0;
+    transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.close-btn:hover {
+    color: rgba(0, 0, 0, 0.65);
+    transform: scale(1.08);
 }
 
 .form-title {

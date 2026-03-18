@@ -20,21 +20,21 @@ body, html {
     position: absolute;
     top: 20px;
     left: 20px;
-    background: none;
+    background: transparent;
     border: none;
-    font-size: 32px;
-    font-weight: bold;
-    color: #000;
+    font-size: 22px;
+    font-weight: 800;
+    color: #111;
     cursor: pointer;
     line-height: 1;
-    padding: 5px 10px;
-    transition: transform 0.2s, color 0.2s;
+    padding: 0;
+    transition: transform 0.15s ease, color 0.15s ease;
     z-index: 1001; 
 }
 
 .close-btn:hover {
-    color: #858080; 
-    transform: scale(1.2);
+    color: rgba(0, 0, 0, 0.65);
+    transform: scale(1.08);
 }
 
 .emerald-card {
