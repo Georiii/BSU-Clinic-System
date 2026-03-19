@@ -15,10 +15,15 @@
             <div class="table-controls">
                 <div class="search-container">
                     <label>Search:</label>
-                    <input type="text" id="searchInput" placeholder="SR-Code or ID Number">
+                    <input type="text" id="searchInput" placeholder="Search ID or Name">
                     <span class="search-icon">🔍</span>
                 </div>
-                <button id="toggleTableBtn" class="toggle-btn">Switch to Employee</button>
+                
+                <div class="toggle-group">
+                    <button id="viewStudentBtn" class="toggle-btn active-toggle">Students</button>
+                    <button id="viewEmployeeBtn" class="toggle-btn">Employees</button>
+                    <button id="viewVisitorBtn" class="toggle-btn">Visitors</button>
+                </div>
             </div>
 
             <div class="table-wrapper">
@@ -36,6 +41,105 @@
                         </tbody>
                 </table>
             </div>
+
+            <div id="modalOverlay" class="modal-overlay"></div>
+
+            <div id="diagnosedModal" class="custom-modal">
+                <button class="modal-close" onclick="closeAllModals()">X</button>
+                <h2>Have you been diagnosed?</h2>
+                <div class="modal-buttons">
+                    <button class="btn-yes" onclick="handleDiagnosedYes()">Yes</button>
+                    <button class="btn-no" onclick="handleDiagnosedNo()">No</button>
+                </div>
+            </div>
+
+            <div id="symptomsModal" class="custom-modal large-modal">
+                <button class="modal-close" onclick="closeAllModals()">X</button>
+                <div class="search-container modal-search">
+                    <label>Search:</label>
+                    <input type="text" id="symptomSearch" placeholder="Case">
+                    <span class="search-icon">🔍</span>
+                </div>
+                <div class="modal-table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Symptoms</th>
+                                <th>Symptoms shows</th>
+                            </tr>
+                        </thead>
+                        <tbody id="symptomsTableBody">
+                            </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <label>To be Considered:</label>
+                    <select id="considerationSelect">
+                        <option value=""></option>
+                        <option value="Rest">Rest</option>
+                        <option value="Hospital">Hospital</option>
+                    </select>
+                </div>
+                <button class="modal-submit-btn" onclick="submitSymptoms()">Submit</button>
+            </div>
+
+            <div id="medicineQuestionModal" class="custom-modal">
+                <button class="modal-close" onclick="closeAllModals()">X</button>
+                <h2>Have you received any medicine?</h2>
+                <div class="modal-buttons">
+                    <button class="btn-yes" onclick="handleMedicineYes()">Yes</button>
+                    <button class="btn-no" onclick="handleMedicineNo()">No</button>
+                </div>
+            </div>
+
+            <div id="medicineListModal" class="custom-modal large-modal">
+                <button class="modal-close" onclick="closeAllModals()">X</button>
+                <div class="search-container modal-search">
+                    <label>Search:</label>
+                    <input type="text" id="medicineSearch" placeholder="Medicine">
+                    <span class="search-icon">🔍</span>
+                </div>
+                <div class="modal-table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Generic</th>
+                                <th>Brand</th>
+                                <th>Quantity</th>
+                                <th>Pieces</th>
+                                <th>Dispense</th>
+                            </tr>
+                        </thead>
+                        <tbody id="medicinesTableBody">
+                            </tbody>
+                    </table>
+                </div>
+                <button class="modal-submit-btn" onclick="submitMedicine()">Submit</button>
+            </div>
+
+            <div id="bpModal" class="custom-modal">
+                <button class="modal-close" onclick="closeAllModals()">X</button>
+                <h2>What is your BP?</h2>
+                <input type="text" id="bpInput" placeholder="Specify (e.g., 120/80)" class="modal-text-input">
+                <button class="modal-submit-btn" onclick="submitBP()">Submit</button>
+            </div>
+
+            <div id="statusModal" class="custom-modal">
+                <button class="modal-close" onclick="closeAllModals()">X</button>
+                <h2 id="statusModalHeader">Status of Medical Certificate:</h2>
+                <div class="radio-group-vertical">
+                    <label><input type="radio" name="certStatus" value="Claimed" onchange="toggleHoldOptions(false)"> Claimed</label>
+                    <label><input type="radio" name="certStatus" value="On-Hold" onchange="toggleHoldOptions(true)"> On-Hold</label>
+                    <div id="holdOptions" style="display: none; margin-left: 20px; flex-direction: column;">
+                        <label><input type="radio" name="holdReason" value="Clearance/Referral"> Clearance/Referral</label>
+                        <label><input type="radio" name="holdReason" value="Follow-up"> Follow-up</label>
+                    </div>
+                </div>
+                <button class="modal-submit-btn" style="margin-top: 20px;" onclick="submitStatus()">Submit</button>
+            </div>
+
         </div>
     </div>
     <script src="../js/TimeoutForm.js"></script>
