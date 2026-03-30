@@ -28,7 +28,28 @@ app.get('/html/VisitorForm.html', (req, res) => { res.sendFile(path.join(__dirna
 
 // --- API ROUTES ---
 
-// NEW: Fetch Master Lists for Modals
+// NEW: GENERATE DAILY VISITOR ID
+app.get('/api/generate-visitor-id', (req, res) => {
+    // Look for the last visitor ID registered TODAY
+    const sql = "SELECT idNo FROM visitor_logs WHERE visit_date = CURDATE() ORDER BY visit_id DESC LIMIT 1";
+    
+    db.query(sql, (err, result) => {
+        if (err) return res.status(500).json(err);
+        
+        let nextId = "0001"; // Default for the very first visitor of the day
+        
+        if (result.length > 0 && result[0].idNo) {
+            // If visitors exist today, take the last ID, turn it into a number, and add 1
+            const lastIdNum = parseInt(result[0].idNo, 10);
+            if (!isNaN(lastIdNum)) {
+                // padStart(4, '0') ensures it always looks like 0002, 0015, etc.
+                nextId = String(lastIdNum + 1).padStart(4, '0'); 
+            }
+        }
+        res.json({ nextId });
+    });
+});
+
 app.get('/api/symptoms', (req, res) => {
     db.query("SELECT * FROM master_symptoms ORDER BY symp_name ASC", (err, results) => {
         if (err) return res.status(500).json(err);
@@ -105,11 +126,12 @@ app.post('/api/register-student', (req, res) => {
 
 // --- TIME OUT API ROUTES WITH WORKFLOW INTEGRATION ---
 app.get('/api/active-student-visits', (req, res) => {
+    // CHANGED TO ASC for Chronological Order
     const sql = `SELECT v.visit_id, v.srcode, s.fullname, v.time_in, v.time_out, 
                         v.purpose_medical_consult, v.purpose_blood_pressure, 
                         v.purpose_med_cert, v.purpose_pre_enrolment 
                  FROM clinic_visits v JOIN students s ON v.srcode = s.srcode 
-                 WHERE v.visit_date = CURDATE() ORDER BY v.time_in DESC`;
+                 WHERE v.visit_date = CURDATE() ORDER BY v.time_in ASC`;
     db.query(sql, (err, results) => {
         if (err) return res.status(500).json(err);
         res.json(results);
@@ -152,9 +174,10 @@ app.post('/api/timeout-student/:id', (req, res) => {
 });
 
 app.get('/api/active-employee-visits', (req, res) => {
+    // CHANGED TO ASC for Chronological Order
     const sql = `SELECT v.visit_id, v.employee_id, e.fullname, v.time_in, v.time_out, v.purpose_of_visit 
                  FROM employee_clinic_visit v JOIN employees e ON v.employee_id = e.employee_id 
-                 WHERE v.visit_date = CURDATE() ORDER BY v.time_in DESC`;
+                 WHERE v.visit_date = CURDATE() ORDER BY v.time_in ASC`;
     db.query(sql, (err, results) => {
         if (err) return res.status(500).json(err);
         res.json(results);
@@ -198,9 +221,10 @@ app.post('/api/timeout-employee/:id', (req, res) => {
 
 
 app.get('/api/active-visitor-visits', (req, res) => {
+    // CHANGED TO ASC for Chronological Order
     const sql = `SELECT visit_id, idNo, fullname, time_in, time_out, purpose 
                  FROM visitor_logs 
-                 WHERE visit_date = CURDATE() ORDER BY time_in DESC`;
+                 WHERE visit_date = CURDATE() ORDER BY time_in ASC`;
     db.query(sql, (err, results) => {
         if (err) return res.status(500).json(err);
         res.json(results);

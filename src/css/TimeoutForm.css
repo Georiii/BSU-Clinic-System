@@ -16,6 +16,7 @@ body {
     border-radius: 30px;
     position: relative;
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    animation: fadeInPage 0.4s ease-out forwards; 
 }
 
 .close-btn {
@@ -58,7 +59,7 @@ body {
     font-size: 16px;
 }
 
-/* --- NEW TOGGLE BUTTON STYLES --- */
+
 .toggle-group {
     display: flex;
     gap: 10px;
@@ -127,9 +128,12 @@ td {
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     background-color: #58cc71; /* Green inner modal */
+    opacity: 0.85;
     padding: 40px;
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.35),
+        0 6px 18px rgba(0, 0, 0, 0.25);
     z-index: 1001;
     text-align: center;
     min-width: 400px;
@@ -198,8 +202,8 @@ td {
 .modal-table-wrapper {
     background: white;
     border-radius: 10px;
-    overflow-y: auto; /* THIS FIXES THE SCROLLING ISSUE */
-    max-height: 350px; /* Limits table height so scrollbar appears */
+    overflow-y: auto; 
+    max-height: 350px; 
     margin-bottom: 20px;
 }
 
@@ -237,4 +241,18 @@ td {
 
 .radio-group-vertical label {
     cursor: pointer;
+}
+
+.page-fade-out {
+    animation: fadeOutPage 0.4s ease-in forwards !important;
+}
+
+@keyframes fadeInPage {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOutPage {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-15px); }
 }

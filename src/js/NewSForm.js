@@ -1,3 +1,9 @@
+function transitionToPage(url) {
+    const container = document.querySelector('.registration-card');
+    if (container) container.classList.add('page-fade-out');
+    setTimeout(() => { window.location.href = url; }, 400); 
+}
+
 const registrationForm = document.getElementById('studentRegistrationForm');
 const successModal = document.getElementById('successModal');
 const doneBtn = document.getElementById('doneBtn');
@@ -5,7 +11,7 @@ const doneBtn = document.getElementById('doneBtn');
 registrationForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const name = document.getElementById('fullname').value; // Get name for the personalized message
+    const name = document.getElementById('fullname').value; 
     const formData = {
         srcode: document.getElementById('srcode').value,
         fullname: name,
@@ -23,15 +29,15 @@ registrationForm.addEventListener('submit', async (e) => {
         });
 
         if (response.ok) {
-            // Update modal text with personalized message
+           
             const modalTitle = successModal.querySelector('h2');
             modalTitle.textContent = `You registered successfully, ${name}!`;
 
             successModal.style.display = 'flex';
 
-            // Automatic redirection after 5 seconds
+            
             setTimeout(() => {
-                window.location.href = '/choose';
+                transitionToPage('/choose'); 
             }, 5000);
         } else {
             alert("Error: Registration failed. SR-Code might already exist.");
@@ -42,9 +48,9 @@ registrationForm.addEventListener('submit', async (e) => {
 });
 
 doneBtn.addEventListener('click', () => {
-    window.location.href = '/choose';
+    transitionToPage('/choose'); 
 });
 
 document.getElementById('closeBtn').addEventListener('click', () => {
-    window.location.href = '/choose';
+    transitionToPage('/choose'); 
 });

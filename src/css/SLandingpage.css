@@ -4,6 +4,7 @@ body, html {
     min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #e5e7eb;
+    
 }
 
 .main-container {
@@ -14,6 +15,7 @@ body, html {
     justify-content: center;
     padding: 24px;
     box-sizing: border-box;
+    
 }
 
 .emerald-card {

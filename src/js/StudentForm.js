@@ -1,3 +1,9 @@
+function transitionToPage(url) {
+    const container = document.querySelector('.main-container') || document.querySelector('.emerald-card');
+    if (container) container.classList.add('page-fade-out');
+    setTimeout(() => { window.location.href = url; }, 400); 
+}
+
 const srInput = document.getElementById('srcode');
 const birthdayInput = document.getElementById('birthday');
 const ageInput = document.getElementById('age');
@@ -59,7 +65,7 @@ if (birthdayInput) {
 const closeBtn = document.getElementById('closeBtn');
 if (closeBtn) {
     closeBtn.addEventListener('click', () => {
-        window.location.href = '/choose';
+        transitionToPage('/choose'); 
     });
 }
 
@@ -84,17 +90,25 @@ function setInitialDateTime() {
 
 document.addEventListener('DOMContentLoaded', setInitialDateTime);
 
-// 6. Special Needs Logic
+// 6. Special Needs Logic (UPDATED)
 const specialNeedsSelect = document.getElementById('specialNeeds');
 const otherNeedsGroup = document.getElementById('otherNeedsGroup');
+const pwdTypeGroup = document.getElementById('pwdTypeGroup');
 
 if (specialNeedsSelect) {
     specialNeedsSelect.addEventListener('change', function() {
+        if (otherNeedsGroup) otherNeedsGroup.style.display = 'none';
+        if (pwdTypeGroup) pwdTypeGroup.style.display = 'none';
+
         if (this.value === 'Other') {
-            otherNeedsGroup.style.display = 'flex';
+            if (otherNeedsGroup) otherNeedsGroup.style.display = 'flex';
+        } else if (this.value === 'Pwd') {
+            if (pwdTypeGroup) pwdTypeGroup.style.display = 'flex';
         } else {
-            otherNeedsGroup.style.display = 'none';
-            document.getElementById('specialNeedsOther').value = '';
+            const otherInput = document.getElementById('specialNeedsOther');
+            const pwdTypeSelect = document.getElementById('pwdTypeSelect');
+            if (otherInput) otherInput.value = '';
+            if (pwdTypeSelect) pwdTypeSelect.value = '';
         }
     });
 }
@@ -190,6 +204,15 @@ if (medicalForm) {
             }
         }
 
+        // PWD Validation
+        if (specialNeedsSelect.value === 'Pwd') {
+            const pwdTypeSelect = document.getElementById('pwdTypeSelect');
+            if (!pwdTypeSelect.value) {
+                pwdTypeSelect.style.border = '2px solid red';
+                hasError = true;
+            }
+        }
+
         const selectedPurpose = purposeSelect.value;
         const selectedCertType = document.querySelector('input[name="cert_type"]:checked')?.value || null;
 
@@ -227,13 +250,16 @@ if (medicalForm) {
             time_out: document.getElementById('timeOut').value || null,
             age: ageInput.value,
             gender: document.getElementById('gender').value, 
+            
+            // UPDATED DATA SENT TO DATABASE
             special_needs: specialNeedsSelect.value === 'Other' ? document.getElementById('specialNeedsOther').value : specialNeedsSelect.value,
+            pwd_type: specialNeedsSelect.value === 'Pwd' ? document.getElementById('pwdTypeSelect').value : null,
             
             purpose_medical_consult: selectedPurpose === 'Medical Consult' ? 1 : 0,
             purpose_dental: selectedPurpose === 'Dental' ? 1 : 0,
             purpose_med_cert: selectedPurpose === 'Medical Certificate' ? 1 : 0,
             purpose_pre_enrolment: selectedCertType === 'Enrolment' ? 1 : 0,
-            purpose_blood_pressure: selectedPurpose === 'Blood Pressure' ? 1 : 0, // NEW BLOOD PRESSURE TRACKING
+            purpose_blood_pressure: selectedPurpose === 'Blood Pressure' ? 1 : 0, 
             
             cert_type: selectedCertType,
             purpose_others: selectedPurpose === 'Others' ? document.getElementById('others_specify').value : null,
@@ -249,7 +275,7 @@ if (medicalForm) {
             });
 
             if (response.ok) {
-                window.location.href = '/success';
+                transitionToPage('/success'); 
             } else {
                 alert("Error: Could not save visit data.");
             }

@@ -1,4 +1,10 @@
-document.addEventListener('DOMContentLoaded', () => {
+function transitionToPage(url) {
+    const container = document.querySelector('.main-container') || document.querySelector('.visitor-card');
+    if (container) container.classList.add('page-fade-out');
+    setTimeout(() => { window.location.href = url; }, 400); 
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initial Date and Time Logic
     const now = new Date();
     const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -6,6 +12,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('visitDate').value = formattedDate;
     document.getElementById('timeIn').value = formattedTime;
+
+    // --- FETCH AUTO-INCREMENT VISITOR ID ---
+    try {
+        const idResponse = await fetch('/api/generate-visitor-id');
+        if (idResponse.ok) {
+            const idData = await idResponse.json();
+            const idInput = document.getElementById('idNo');
+            idInput.value = idData.nextId; // Fills in the 0001 formatted ID
+        }
+    } catch (error) {
+        console.error("Error fetching next Visitor ID:", error);
+    }
 
     // 2. Age Calculation Logic
     const birthdayInput = document.getElementById('birthday');
@@ -25,18 +43,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 3. Special Needs Logic 
+    // 3. Special Needs Logic
     const specialNeedsSelect = document.getElementById('specialNeeds');
     const otherNeedsGroup = document.getElementById('otherNeedsGroup');
+    const pwdTypeGroup = document.getElementById('pwdTypeGroup');
 
     if (specialNeedsSelect) {
         specialNeedsSelect.addEventListener('change', function () {
+            if (otherNeedsGroup) otherNeedsGroup.style.display = 'none';
+            if (pwdTypeGroup) pwdTypeGroup.style.display = 'none';
+
             if (this.value === 'Other') {
-                otherNeedsGroup.style.display = 'flex';
+                if (otherNeedsGroup) otherNeedsGroup.style.display = 'flex';
+            } else if (this.value === 'Pwd') {
+                if (pwdTypeGroup) pwdTypeGroup.style.display = 'flex';
             } else {
-                otherNeedsGroup.style.display = 'none';
                 const other = document.getElementById('specialNeedsOther');
+                const pwdTypeSelect = document.getElementById('pwdTypeSelect');
                 if (other) other.value = '';
+                if (pwdTypeSelect) pwdTypeSelect.value = '';
             }
         });
     }
@@ -103,6 +128,30 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('visitorForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        let hasError = false;
+        document.querySelectorAll('input, select').forEach(el => el.style.border = 'none');
+
+        if (specialNeedsSelect.value === 'Other') {
+            const otherInput = document.getElementById('specialNeedsOther');
+            if (!otherInput.value.trim()) {
+                otherInput.style.border = '2px solid red';
+                hasError = true;
+            }
+        }
+        
+        if (specialNeedsSelect.value === 'Pwd') {
+            const pwdTypeSelect = document.getElementById('pwdTypeSelect');
+            if (!pwdTypeSelect.value) {
+                pwdTypeSelect.style.border = '2px solid red';
+                hasError = true;
+            }
+        }
+        
+        if (hasError) {
+            alert("Please fill in all highlighted fields.");
+            return;
+        }
+
         const signatureData = canvas.toDataURL(); 
         document.getElementById('signatureData').value = signatureData;
 
@@ -116,8 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
             age: document.getElementById('age').value,
             gender: document.getElementById('gender').value,
             
-            special_needs: document.getElementById('specialNeeds').value,
-            special_needs_specify: document.getElementById('specialNeedsOther')?.value || null,
+            special_needs: specialNeedsSelect.value === 'Other' ? document.getElementById('specialNeedsOther').value : specialNeedsSelect.value,
+            pwd_type: specialNeedsSelect.value === 'Pwd' ? document.getElementById('pwdTypeSelect').value : null,
+            
             certificate_type: document.querySelector('input[name="cert_type"]:checked')?.value || null,
             others_specify: document.getElementById('others_specify')?.value || null,
             
@@ -132,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.ok) {
-                window.location.href = '/success';
+                transitionToPage('/success'); 
             } else {
                 alert("Error submitting visitor form.");
             }
@@ -143,6 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 7. Close Button
     document.getElementById('closeBtn').addEventListener('click', () => {
-        window.location.href = '/choose';
+        transitionToPage('/choose'); 
     });
 });

@@ -1,3 +1,10 @@
+// --- Helper function for smooth page transitions ---
+function transitionToPage(url) {
+    const container = document.querySelector('.main-container') || document.querySelector('.emerald-card');
+    if (container) container.classList.add('page-fade-out');
+    setTimeout(() => { window.location.href = url; }, 400); 
+}
+
 const employeeIdInput = document.getElementById('employeeId');
 const birthdayInput = document.getElementById('birthday');
 const ageInput = document.getElementById('age');
@@ -71,7 +78,7 @@ if (birthdayInput) {
 const closeBtn = document.getElementById('closeBtn');
 if (closeBtn) {
     closeBtn.addEventListener('click', () => {
-        window.location.href = '/choose';
+        transitionToPage('/choose'); 
     });
 }
 
@@ -95,17 +102,25 @@ function setInitialDateTime() {
 
 document.addEventListener('DOMContentLoaded', setInitialDateTime);
 
+// Special Needs Logic (UPDATED)
 const specialNeedsSelect = document.getElementById('specialNeeds');
 const otherNeedsGroup = document.getElementById('otherNeedsGroup');
+const pwdTypeGroup = document.getElementById('pwdTypeGroup');
 
 if (specialNeedsSelect) {
     specialNeedsSelect.addEventListener('change', function () {
+        if (otherNeedsGroup) otherNeedsGroup.style.display = 'none';
+        if (pwdTypeGroup) pwdTypeGroup.style.display = 'none';
+
         if (this.value === 'Other') {
-            otherNeedsGroup.style.display = 'flex';
+            if (otherNeedsGroup) otherNeedsGroup.style.display = 'flex';
+        } else if (this.value === 'Pwd') {
+            if (pwdTypeGroup) pwdTypeGroup.style.display = 'flex';
         } else {
-            otherNeedsGroup.style.display = 'none';
             const other = document.getElementById('specialNeedsOther');
+            const pwdTypeSelect = document.getElementById('pwdTypeSelect');
             if (other) other.value = '';
+            if (pwdTypeSelect) pwdTypeSelect.value = '';
         }
     });
 }
@@ -133,7 +148,6 @@ if (purposeSelect) {
     });
 }
 
-// Added Signature Logic
 const canvas = document.getElementById('signatureCanvas');
 if (canvas) {
     const ctx = canvas.getContext('2d');
@@ -174,12 +188,63 @@ if (form) {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const timeOutField = document.getElementById('timeOut');
-        if (timeOutField && !timeOutField.value) {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            timeOutField.value = `${hours}:${minutes}`;
+        // RESET BORDERS
+        document.querySelectorAll('input, select').forEach(el => {
+            el.style.border = 'none';
+        });
+
+        // VALIDATION
+        const requiredFields = [
+            { id: 'employeeId', name: 'Employee ID' },
+            { id: 'purposeSelect', name: 'Purpose of Visit' }
+        ];
+
+        let hasError = false;
+
+        for (let field of requiredFields) {
+            const element = document.getElementById(field.id);
+            if (!element.value || element.value === "") {
+                element.style.border = '2px solid red';
+                hasError = true;
+            }
+        }
+
+        if (specialNeedsSelect.value === 'Other') {
+            const otherInput = document.getElementById('specialNeedsOther');
+            if (!otherInput.value.trim()) {
+                otherInput.style.border = '2px solid red';
+                hasError = true;
+            }
+        }
+
+        // PWD Validation
+        if (specialNeedsSelect.value === 'Pwd') {
+            const pwdTypeSelect = document.getElementById('pwdTypeSelect');
+            if (!pwdTypeSelect.value) {
+                pwdTypeSelect.style.border = '2px solid red';
+                hasError = true;
+            }
+        }
+
+        const selectedPurpose = purposeSelect.value;
+        const selectedCertType = document.querySelector('input[name="cert_type"]:checked')?.value || null;
+
+        if (selectedPurpose === 'Medical Certificate' && !selectedCertType) {
+            alert("Please select a Certificate Type.");
+            hasError = true;
+        }
+
+        if (selectedPurpose === 'Others') {
+            const otherSpecify = document.getElementById('others_specify');
+            if (!otherSpecify.value.trim()) {
+                otherSpecify.style.border = '2px solid red';
+                hasError = true;
+            }
+        }
+
+        if (hasError) {
+            alert("Please fill in all highlighted fields.");
+            return;
         }
 
         // Process signature
@@ -192,7 +257,7 @@ if (form) {
             employee_id: document.getElementById('employeeId').value,
             visit_date: document.getElementById('visitDate').value,
             time_in: document.getElementById('timeIn').value,
-            time_out: document.getElementById('timeOut').value,
+            time_out: document.getElementById('timeOut').value || null,
             fullname: document.getElementById('name').value,
             department: document.getElementById('department').value,
             position: document.getElementById('position').value,
@@ -201,12 +266,15 @@ if (form) {
             birthday: document.getElementById('birthday').value,
             age: document.getElementById('age').value,
             gender: document.getElementById('gender').value,
-            special_needs: document.getElementById('specialNeeds').value,
-            special_needs_specify: document.getElementById('specialNeedsOther')?.value || null,
-            purpose_of_visit: document.getElementById('purposeSelect').value,
-            certificate_type: document.querySelector('input[name="cert_type"]:checked')?.value || null,
-            others_specify: document.getElementById('others_specify')?.value || null,
-            signature: signatureData // Sent to server
+            
+            // UPDATED DATA SENT TO DATABASE
+            special_needs: specialNeedsSelect.value === 'Other' ? document.getElementById('specialNeedsOther').value : specialNeedsSelect.value,
+            pwd_type: specialNeedsSelect.value === 'Pwd' ? document.getElementById('pwdTypeSelect').value : null,
+            
+            purpose_of_visit: selectedPurpose, 
+            certificate_type: selectedCertType,
+            others_specify: selectedPurpose === 'Others' ? document.getElementById('others_specify').value : null,
+            signature: signatureData 
         };
 
         try {
@@ -217,7 +285,7 @@ if (form) {
             });
 
             if (response.ok) {
-                window.location.href = '/success';
+                transitionToPage('/success'); 
             } else {
                 alert('Error submitting form. Please check your database connection.');
             }

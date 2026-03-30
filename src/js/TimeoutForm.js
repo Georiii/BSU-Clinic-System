@@ -1,8 +1,13 @@
+function transitionToPage(url) {
+    const container = document.querySelector('.main-container') || document.querySelector('.timeout-card');
+    if (container) container.classList.add('page-fade-out');
+    setTimeout(() => { window.location.href = url; }, 400); 
+}
+
 let currentView = 'student'; 
 let allData = [];
 let pendingTimeoutId = null; 
 
-// Master Lists loaded from DB
 let masterSymptoms = [];
 let masterMedicines = [];
 
@@ -23,7 +28,6 @@ function formatTime(timeString) {
     return `${hours}:${minutes} ${ampm}`;
 }
 
-// --- FETCH MASTER LISTS FOR MODALS ---
 async function loadMasterLists() {
     try {
         const sympRes = await fetch('/api/symptoms');
@@ -70,7 +74,6 @@ function renderMedicinesTable(data) {
     });
 }
 
-// --- FETCH ACTIVE VISITS TABLE ---
 async function fetchData() {
     let endpoint;
     if (currentView === 'student') endpoint = '/api/active-student-visits';
@@ -100,21 +103,24 @@ function renderTable(data) {
         const visitId = row.visit_id; 
 
         let purposeValue = "";
+        
         if (currentView === 'student') {
             if (row.purpose_medical_consult === 1) purposeValue = "Medical Consult";
             else if (row.purpose_blood_pressure === 1) purposeValue = "Blood Pressure";
             else if (row.purpose_med_cert === 1) purposeValue = "Medical Certificate";
             else if (row.purpose_pre_enrolment === 1) purposeValue = "Pre-enrolment";
         } else if (currentView === 'employee') {
-            purposeValue = row.purpose_of_visit;
+            purposeValue = row.purpose_of_visit || ""; 
         } else {
-            purposeValue = row.purpose;
+            purposeValue = row.purpose || "";
         }
 
         const displayTimeIn = formatTime(row.time_in);
         const displayTimeOut = formatTime(row.time_out);
+        
+        const safePurpose = purposeValue.replace(/'/g, "\\'"); 
 
-        const timeOutColumn = displayTimeOut ? displayTimeOut : `<button class="timeout-btn" onclick="initiateTimeOut('${visitId}', '${purposeValue}')">Time out</button>`;
+        const timeOutColumn = displayTimeOut ? displayTimeOut : `<button class="timeout-btn" onclick="initiateTimeOut('${visitId}', '${safePurpose}')">Time out</button>`;
 
         tr.innerHTML = `
             <td>${index + 1}</td>
@@ -127,16 +133,13 @@ function renderTable(data) {
     });
 }
 
-// --- WORKFLOW LOGIC ---
-
 function initiateTimeOut(id, purpose) {
     pendingTimeoutId = id;
     timeoutData = { blood_pressure: null, consideration: null, cert_status: null, hold_reason: null, symptoms: [], medicines: [] };
     
-    // SAFE CHECK: Ensure purpose is a valid string before checking it
-    const p = (typeof purpose === 'string') ? purpose.toLowerCase().trim() : "";
+    const p = (typeof purpose === 'string' && purpose !== 'null') ? purpose.toLowerCase().trim() : "";
 
-    console.log("Triggering Timeout for ID:", id, "Purpose:", p); // Helpful for debugging
+    console.log("Triggering Timeout for ID:", id, "Purpose:", p); 
 
     if (p.includes("medical consult") || p.includes("medicine")) {
         showModal('diagnosedModal');
@@ -149,12 +152,10 @@ function initiateTimeOut(id, purpose) {
         document.getElementById('statusModalHeader').textContent = "Status of Pre-enrolment:";
         showModal('statusModal');
     } else {
-        // If purpose is blank, "Others", "Dental", etc. -> Timeout immediately
         executeFinalTimeOut();
     }
 }
 
-// Medical Consult Flow
 function handleDiagnosedNo() {
     closeAllModals();
     executeFinalTimeOut();
@@ -210,7 +211,6 @@ function submitMedicine() {
     executeFinalTimeOut();
 }
 
-// Blood Pressure Flow
 function submitBP() {
     const bp = document.getElementById('bpInput').value.trim();
     if (!bp) {
@@ -224,7 +224,6 @@ function submitBP() {
     executeFinalTimeOut();
 }
 
-// Status Flow 
 function toggleHoldOptions(show) {
     document.getElementById('holdOptions').style.display = show ? 'flex' : 'none';
 }
@@ -253,7 +252,6 @@ function submitStatus() {
     executeFinalTimeOut();
 }
 
-// --- FINAL API CALL ---
 async function executeFinalTimeOut() {
     if (!pendingTimeoutId) return;
 
@@ -280,7 +278,6 @@ async function executeFinalTimeOut() {
     }
 }
 
-// --- MODAL UTILITIES & SEARCH ---
 function showModal(modalId) {
     document.getElementById('modalOverlay').style.display = 'block';
     document.getElementById(modalId).style.display = 'block';
@@ -292,25 +289,29 @@ function closeAllModals() {
     modals.forEach(m => m.style.display = 'none');
 }
 
-// Search for Symptoms Modal
+// --- FIXED: Modals now hide rows via CSS instead of deleting them ---
 document.getElementById('symptomSearch').addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
-    const filtered = masterSymptoms.filter(item => item.symp_name.toLowerCase().includes(term));
-    renderSymptomsTable(filtered);
+    const rows = document.querySelectorAll('#symptomsTableBody tr');
+    
+    rows.forEach(row => {
+        const sympName = row.children[1].textContent.toLowerCase();
+        row.style.display = sympName.includes(term) ? '' : 'none';
+    });
 });
 
-// Search for Medicines Modal
 document.getElementById('medicineSearch').addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
-    const filtered = masterMedicines.filter(item => {
-        const gen = item.generic_name ? item.generic_name.toLowerCase() : '';
-        const brand = item.brand_name ? item.brand_name.toLowerCase() : '';
-        return gen.includes(term) || brand.includes(term);
+    const rows = document.querySelectorAll('#medicinesTableBody tr');
+    
+    rows.forEach(row => {
+        const genName = row.children[1].textContent.toLowerCase();
+        const brandName = row.children[2].textContent.toLowerCase();
+        row.style.display = (genName.includes(term) || brandName.includes(term)) ? '' : 'none';
     });
-    renderMedicinesTable(filtered);
 });
+// ------------------------------------------------------------------
 
-// --- VIEW TOGGLES (UPDATED) ---
 const viewStudentBtn = document.getElementById('viewStudentBtn');
 const viewEmployeeBtn = document.getElementById('viewEmployeeBtn');
 const viewVisitorBtn = document.getElementById('viewVisitorBtn');
@@ -320,7 +321,6 @@ function switchTab(viewType, title, header) {
     document.getElementById('formTitle').textContent = `Time Out Form (${title})`;
     document.getElementById('idHeader').textContent = header;
     
-    // Manage active states
     viewStudentBtn.classList.remove('active-toggle');
     viewEmployeeBtn.classList.remove('active-toggle');
     viewVisitorBtn.classList.remove('active-toggle');
@@ -336,8 +336,6 @@ viewStudentBtn.addEventListener('click', () => switchTab('student', 'Students', 
 viewEmployeeBtn.addEventListener('click', () => switchTab('employee', 'Employees', 'ID Number'));
 viewVisitorBtn.addEventListener('click', () => switchTab('visitor', 'Visitors', 'ID No.'));
 
-
-// Main Search
 document.getElementById('searchInput').addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     const filtered = allData.filter(item => {
@@ -352,7 +350,6 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
     renderTable(filtered);
 });
 
-// Load everything on start
 document.addEventListener('DOMContentLoaded', () => {
     loadMasterLists();
     fetchData();

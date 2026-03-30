@@ -15,6 +15,7 @@ body {
     width: 450px;
     position: relative;
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    animation: fadeInPage 0.4s ease-out forwards; /* ADDED ANIMATION */
 }
 
 .close-btn {
@@ -112,4 +113,19 @@ body {
     border-radius: 5px; font-size: 16px;
     font-weight: bold; cursor: pointer;
     margin-top: 20px;
+}
+
+
+.page-fade-out {
+    animation: fadeOutPage 0.4s ease-in forwards !important;
+}
+
+@keyframes fadeInPage {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOutPage {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-15px); }
 }

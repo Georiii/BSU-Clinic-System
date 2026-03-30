@@ -12,6 +12,7 @@ body, html {
     align-items: center;
     min-height: 100vh;
     padding: 20px;
+    animation: fadeInPage 0.4s ease-out forwards; 
 }
 
 .visitor-card {
@@ -116,7 +117,6 @@ input.readonly-field {
     font-weight: 400;
 }
 
-/* NEW: Radio buttons and animations from EmployeeForm */
 .radio-sub-list {
     margin: 6px 0 14px 28px;
     display: flex;
@@ -132,7 +132,8 @@ input.readonly-field {
     gap: 8px;
 }
 
-#certTypeGroup, #otherNeedsGroup, #othersSpecifyGroup {
+/* UPDATED WITH pwdTypeGroup */
+#certTypeGroup, #otherNeedsGroup, #othersSpecifyGroup, #pwdTypeGroup {
     transition: all 0.3s ease-in-out;
     animation: fadeIn 0.3s ease-in-out;
 }
@@ -142,7 +143,6 @@ input.readonly-field {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Signature Section */
 .signature-section {
     margin-top: 30px;
     text-align: center;
@@ -205,4 +205,18 @@ canvas {
 .submit-btn:hover {
     background-color: #f0c000;
     transform: scale(1.03);
+}
+
+.page-fade-out {
+    animation: fadeOutPage 0.4s ease-in forwards !important;
+}
+
+@keyframes fadeInPage {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOutPage {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-15px); }
 }

@@ -9,14 +9,14 @@
 <body>
     <div class="main-container">
         <div class="timeout-card">
-            <button class="close-btn" onclick="window.location.href='/choose'">X</button>
+            <button class="close-btn" onclick="transitionToPage('/choose')">&times;</button>
             <h1 id="formTitle">Time Out Form (Students)</h1>
 
             <div class="table-controls">
                 <div class="search-container">
                     <label>Search:</label>
                     <input type="text" id="searchInput" placeholder="Search ID or Name">
-                    <span class="search-icon">🔍</span>
+                    <span class="search-icon">🔎︎</span>
                 </div>
                 
                 <div class="toggle-group">
@@ -46,7 +46,7 @@
 
             <div id="diagnosedModal" class="custom-modal">
                 <button class="modal-close" onclick="closeAllModals()">X</button>
-                <h2>Have you been diagnosed?</h2>
+                <h2>Did you receive a medical consultation today?</h2>
                 <div class="modal-buttons">
                     <button class="btn-yes" onclick="handleDiagnosedYes()">Yes</button>
                     <button class="btn-no" onclick="handleDiagnosedNo()">No</button>
@@ -58,7 +58,7 @@
                 <div class="search-container modal-search">
                     <label>Search:</label>
                     <input type="text" id="symptomSearch" placeholder="Case">
-                    <span class="search-icon">🔍</span>
+                    <span class="search-icon">🔎︎</span>
                 </div>
                 <div class="modal-table-wrapper">
                     <table>
@@ -98,7 +98,7 @@
                 <div class="search-container modal-search">
                     <label>Search:</label>
                     <input type="text" id="medicineSearch" placeholder="Medicine">
-                    <span class="search-icon">🔍</span>
+                    <span class="search-icon">🔎︎</span>
                 </div>
                 <div class="modal-table-wrapper">
                     <table>

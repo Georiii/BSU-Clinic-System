@@ -17,7 +17,7 @@
                     <div class="left-col">
                         <div class="input-group">
                             <label for="idNo">ID No.:</label>
-                            <input type="text" id="idNo" required autocomplete="off">
+                            <input type="text" id="idNo" readonly class="readonly-field" style="pointer-events: none;" required autocomplete="off">
                         </div>
                         <div class="input-group">
                             <label for="visitDate">DATE:</label>
@@ -62,6 +62,20 @@
                             </select>
                         </div>
                         
+                        <div class="input-group" id="pwdTypeGroup" style="display: none;">
+                            <label for="pwdTypeSelect">DISABILITY:</label>
+                            <select id="pwdTypeSelect">
+                                <option value="">Select type...</option>
+                                <option value="Physical/orthopedic">Physical/orthopedic</option>
+                                <option value="Psychosocial">Psychosocial</option>
+                                <option value="Chronic Illness">Chronic Illness (Cancer, etc.)</option>
+                                <option value="Rare Diseases">Rare Diseases</option>
+                                <option value="Visual Impairment">Visual Impairment</option>
+                                <option value="Communication Disability">Communication Disability (hearing and speech)</option>
+                                <option value="Others">Others</option>
+                            </select>
+                        </div>
+                        
                         <div class="input-group" id="otherNeedsGroup" style="display: none;">
                             <label for="specialNeedsOther">SPECIFY:</label>
                             <input type="text" id="specialNeedsOther" placeholder="Please specify">
@@ -74,7 +88,7 @@
                             <select id="purposeSelect" required>
                                 <option value="">Choose purpose...</option>
                                 <option value="Medical Certificate">Medical Certificate</option>
-                                <option value="Medical Consult">Medical Consult</option>
+                                <option value="Medical Consult">Medical Consult/Medicine</option>
                                 <option value="Dental">Dental</option>
                                 <option value="Blood Pressure">Blood Pressure</option>
                                 <option value="Others">Others</option>
