@@ -132,8 +132,8 @@ input.readonly-field {
     gap: 8px;
 }
 
-/* UPDATED WITH pwdTypeGroup */
-#certTypeGroup, #otherNeedsGroup, #othersSpecifyGroup, #pwdTypeGroup {
+/* UPDATED WITH dentalServiceGroup */
+#certTypeGroup, #otherNeedsGroup, #othersSpecifyGroup, #pwdTypeGroup, #dentalServiceGroup {
     transition: all 0.3s ease-in-out;
     animation: fadeIn 0.3s ease-in-out;
 }

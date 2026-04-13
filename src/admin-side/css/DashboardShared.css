@@ -1,0 +1,110 @@
+/* DashboardShared.css - Global Layout, Sidebar, Fonts, Buttons, and Tables */
+
+body, html { 
+    margin: 0; 
+    padding: 0; 
+    width: 100vw; /* FORCES body to be exactly 100% of the screen width */
+    height: 100vh; 
+    font-family: 'Segoe UI', Tahoma, sans-serif; 
+    background-color: #f4f6f9; 
+    display: flex; 
+    overflow: hidden; 
+    box-sizing: border-box;
+}
+
+/* --- SIDEBAR --- */
+.sidebar { 
+    width: 260px; 
+    min-width: 260px; /* Prevents sidebar from squishing */
+    background-color: #50C878; 
+    color: black; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-between; 
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
+    z-index: 10; 
+    flex-shrink: 0; 
+}
+
+.sidebar-header { 
+    padding: 20px; 
+    font-size: 24px; 
+    cursor: pointer; 
+    font-weight: bold; 
+}
+
+.sidebar-menu { 
+    list-style: none; 
+    padding: 0 15px; 
+    margin: 0; 
+}
+
+.sidebar-menu li { 
+    padding: 14px 20px; 
+    font-weight: 700; 
+    cursor: pointer; 
+    margin-bottom: 5px; 
+    color: #111; 
+    border-radius: 25px; 
+    transition: background 0.2s;
+}
+
+.sidebar-menu li:hover { background-color: rgba(255,255,255,0.3); }
+.sidebar-menu li.active { background-color: #a7e8b9; } 
+
+.logout-btn { 
+    background-color: #FFCC00; 
+    color: black; 
+    border: none; 
+    padding: 14px 20px; 
+    margin: 20px; 
+    font-weight: 700; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+    transition: transform 0.2s;
+}
+
+.logout-btn:hover { transform: translateY(-2px); background-color: #e6b800; }
+
+/* --- MAIN CONTENT & TITLES --- */
+.main-content { 
+    flex-grow: 1; 
+    width: calc(100vw - 260px); /* Bulletproof fix: Screen width minus sidebar width */
+    max-width: calc(100vw - 260px);
+    padding: 40px 50px; 
+    overflow-y: auto; 
+    overflow-x: hidden;
+    background-color: #f8f9fa; 
+    box-sizing: border-box; 
+}
+
+h1.page-title { 
+    margin-top: 0; 
+    font-size: 32px; 
+    color: #111; 
+    margin-bottom: 30px; 
+    font-weight: 800; 
+    text-transform: uppercase; 
+}
+
+/* --- SHARED BUTTONS & PILLS --- */
+.btn-green { background-color: #50C878; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.2s;}
+.btn-green:hover { background-color: #3aa856; }
+.btn-yellow { background-color: #FFCC00; color: black; border: none; padding: 10px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.2s;}
+.btn-yellow:hover { background-color: #e6b800; }
+
+.pill { padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; text-align: center; }
+.pill.completed { background-color: #d1fae5; color: #065f46; border: 1px solid #34d399; }
+.pill.on-hold { background-color: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
+.pill.in-clinic { background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
+
+/* --- DATA TABLE --- */
+.data-table { 
+    width: 100%; border-collapse: collapse; background: white; 
+    border-radius: 12px; overflow: hidden; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; 
+}
+.data-table th, .data-table td { padding: 16px; text-align: center; border-bottom: 1px solid #eee; font-size: 14px; }
+.data-table th { background-color: #fff; color: #555; font-weight: 700; border-bottom: 2px solid #ddd; }
+.data-table tr:hover { background-color: #f9fafb; }

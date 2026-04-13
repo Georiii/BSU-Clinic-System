@@ -71,14 +71,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const certTypeGroup = document.getElementById('certTypeGroup');
     const othersSpecifyGroup = document.getElementById('othersSpecifyGroup');
     const othersSpecifyInput = document.getElementById('others_specify');
+    const dentalServiceGroup = document.getElementById('dentalServiceGroup');
 
     if (purposeSelect) {
         purposeSelect.addEventListener('change', () => {
             if (certTypeGroup) certTypeGroup.style.display = 'none';
             if (othersSpecifyGroup) othersSpecifyGroup.style.display = 'none';
+            if (dentalServiceGroup) dentalServiceGroup.style.display = 'none';
 
             if (othersSpecifyInput) othersSpecifyInput.value = '';
-            document.querySelectorAll('input[name="cert_type"]').forEach((r) => {
+            
+            // Clear all radios when switching
+            document.querySelectorAll('input[name="cert_type"], input[name="dental_service_type"]').forEach((r) => {
                 r.checked = false;
             });
 
@@ -86,6 +90,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (certTypeGroup) certTypeGroup.style.display = 'block';
             } else if (purposeSelect.value === 'Others') {
                 if (othersSpecifyGroup) othersSpecifyGroup.style.display = 'block';
+            } else if (purposeSelect.value === 'Dental') {
+                if (dentalServiceGroup) dentalServiceGroup.style.display = 'block';
             }
         });
     }
@@ -147,6 +153,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         
+        const selectedPurpose = document.getElementById('purposeSelect').value;
+        const selectedDentalService = document.querySelector('input[name="dental_service_type"]:checked')?.value || null;
+
+        if (selectedPurpose === 'Dental' && !selectedDentalService) {
+            alert("Please select a Dental Service.");
+            hasError = true;
+        }
+        
         if (hasError) {
             alert("Please fill in all highlighted fields.");
             return;
@@ -169,6 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             pwd_type: specialNeedsSelect.value === 'Pwd' ? document.getElementById('pwdTypeSelect').value : null,
             
             certificate_type: document.querySelector('input[name="cert_type"]:checked')?.value || null,
+            dental_service_type: selectedDentalService,
             others_specify: document.getElementById('others_specify')?.value || null,
             
             signature: signatureData

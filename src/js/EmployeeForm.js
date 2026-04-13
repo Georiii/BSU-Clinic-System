@@ -129,14 +129,18 @@ const purposeSelect = document.getElementById('purposeSelect');
 const certTypeGroup = document.getElementById('certTypeGroup');
 const othersSpecifyGroup = document.getElementById('othersSpecifyGroup');
 const othersSpecifyInput = document.getElementById('others_specify');
+const dentalServiceGroup = document.getElementById('dentalServiceGroup');
 
 if (purposeSelect) {
     purposeSelect.addEventListener('change', () => {
         if (certTypeGroup) certTypeGroup.style.display = 'none';
         if (othersSpecifyGroup) othersSpecifyGroup.style.display = 'none';
+        if (dentalServiceGroup) dentalServiceGroup.style.display = 'none';
 
         if (othersSpecifyInput) othersSpecifyInput.value = '';
-        document.querySelectorAll('input[name="cert_type"]').forEach((r) => {
+        
+        // Clear all radios when switching
+        document.querySelectorAll('input[name="cert_type"], input[name="dental_service_type"]').forEach((r) => {
             r.checked = false;
         });
 
@@ -144,6 +148,8 @@ if (purposeSelect) {
             if (certTypeGroup) certTypeGroup.style.display = 'block';
         } else if (purposeSelect.value === 'Others') {
             if (othersSpecifyGroup) othersSpecifyGroup.style.display = 'block';
+        } else if (purposeSelect.value === 'Dental') {
+            if (dentalServiceGroup) dentalServiceGroup.style.display = 'block';
         }
     });
 }
@@ -228,9 +234,15 @@ if (form) {
 
         const selectedPurpose = purposeSelect.value;
         const selectedCertType = document.querySelector('input[name="cert_type"]:checked')?.value || null;
+        const selectedDentalService = document.querySelector('input[name="dental_service_type"]:checked')?.value || null;
 
         if (selectedPurpose === 'Medical Certificate' && !selectedCertType) {
             alert("Please select a Certificate Type.");
+            hasError = true;
+        }
+
+        if (selectedPurpose === 'Dental' && !selectedDentalService) {
+            alert("Please select a Dental Service.");
             hasError = true;
         }
 
@@ -273,6 +285,7 @@ if (form) {
             
             purpose_of_visit: selectedPurpose, 
             certificate_type: selectedCertType,
+            dental_service_type: selectedDentalService,
             others_specify: selectedPurpose === 'Others' ? document.getElementById('others_specify').value : null,
             signature: signatureData 
         };

@@ -105,10 +105,12 @@ function renderTable(data) {
         let purposeValue = "";
         
         if (currentView === 'student') {
-            if (row.purpose_medical_consult === 1) purposeValue = "Medical Consult";
-            else if (row.purpose_blood_pressure === 1) purposeValue = "Blood Pressure";
-            else if (row.purpose_med_cert === 1) purposeValue = "Medical Certificate";
-            else if (row.purpose_pre_enrolment === 1) purposeValue = "Pre-enrolment";
+            // FIXED: Using loose equality (==) to catch if MySQL returns '1', 1, or true
+            if (row.purpose_medical_consult == 1 || row.purpose_medical_consult === true) purposeValue = "Medical Consult";
+            else if (row.purpose_dental == 1 || row.purpose_dental === true) purposeValue = "Dental";
+            else if (row.purpose_blood_pressure == 1 || row.purpose_blood_pressure === true) purposeValue = "Blood Pressure";
+            else if (row.purpose_med_cert == 1 || row.purpose_med_cert === true) purposeValue = "Medical Certificate";
+            else if (row.purpose_pre_enrolment == 1 || row.purpose_pre_enrolment === true) purposeValue = "Pre-enrolment";
         } else if (currentView === 'employee') {
             purposeValue = row.purpose_of_visit || ""; 
         } else {
@@ -143,6 +145,9 @@ function initiateTimeOut(id, purpose) {
 
     if (p.includes("medical consult") || p.includes("medicine")) {
         showModal('diagnosedModal');
+    } else if (p.includes("dental")) {
+        // Skips symptoms completely, goes straight to medicine for dental
+        showModal('medicineQuestionModal');
     } else if (p.includes("blood pressure")) {
         showModal('bpModal');
     } else if (p.includes("medical certificate")) {
@@ -169,10 +174,14 @@ function handleDiagnosedYes() {
 function submitSymptoms() {
     const checkboxes = document.querySelectorAll('input[name="symptom"]:checked');
     checkboxes.forEach(cb => timeoutData.symptoms.push(cb.value));
-    timeoutData.consideration = document.getElementById('considerationSelect').value || null;
+    
+    // UPDATED: Now grabs text from the textbox input
+    timeoutData.consideration = document.getElementById('considerationInput').value.trim() || null;
 
     checkboxes.forEach(cb => cb.checked = false);
-    document.getElementById('considerationSelect').value = "";
+    
+    // Clears the input for the next patient
+    document.getElementById('considerationInput').value = "";
 
     closeAllModals();
     showModal('medicineQuestionModal');
@@ -289,7 +298,6 @@ function closeAllModals() {
     modals.forEach(m => m.style.display = 'none');
 }
 
-// --- FIXED: Modals now hide rows via CSS instead of deleting them ---
 document.getElementById('symptomSearch').addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     const rows = document.querySelectorAll('#symptomsTableBody tr');
@@ -310,7 +318,6 @@ document.getElementById('medicineSearch').addEventListener('input', (e) => {
         row.style.display = (genName.includes(term) || brandName.includes(term)) ? '' : 'none';
     });
 });
-// ------------------------------------------------------------------
 
 const viewStudentBtn = document.getElementById('viewStudentBtn');
 const viewEmployeeBtn = document.getElementById('viewEmployeeBtn');

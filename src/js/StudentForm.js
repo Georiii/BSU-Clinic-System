@@ -117,16 +117,25 @@ if (specialNeedsSelect) {
 const purposeSelect = document.getElementById('purposeSelect');
 const certTypeGroup = document.getElementById('certTypeGroup');
 const othersSpecifyGroup = document.getElementById('othersSpecifyGroup');
+const dentalServiceGroup = document.getElementById('dentalServiceGroup');
 
 if (purposeSelect) {
     purposeSelect.addEventListener('change', function() {
         certTypeGroup.style.display = 'none';
         othersSpecifyGroup.style.display = 'none';
+        if (dentalServiceGroup) dentalServiceGroup.style.display = 'none';
+
+        // Clear all radios when switching
+        document.querySelectorAll('input[name="cert_type"], input[name="dental_service_type"]').forEach((r) => {
+            r.checked = false;
+        });
 
         if (this.value === 'Medical Certificate') {
             certTypeGroup.style.display = 'block';
         } else if (this.value === 'Others') {
             othersSpecifyGroup.style.display = 'block';
+        } else if (this.value === 'Dental') {
+            if (dentalServiceGroup) dentalServiceGroup.style.display = 'block';
         }
     });
 }
@@ -215,9 +224,15 @@ if (medicalForm) {
 
         const selectedPurpose = purposeSelect.value;
         const selectedCertType = document.querySelector('input[name="cert_type"]:checked')?.value || null;
+        const selectedDentalService = document.querySelector('input[name="dental_service_type"]:checked')?.value || null;
 
         if (selectedPurpose === 'Medical Certificate' && !selectedCertType) {
             alert("Please select a Certificate Type.");
+            hasError = true;
+        }
+
+        if (selectedPurpose === 'Dental' && !selectedDentalService) {
+            alert("Please select a Dental Service.");
             hasError = true;
         }
 
@@ -262,6 +277,7 @@ if (medicalForm) {
             purpose_blood_pressure: selectedPurpose === 'Blood Pressure' ? 1 : 0, 
             
             cert_type: selectedCertType,
+            dental_service_type: selectedDentalService,
             purpose_others: selectedPurpose === 'Others' ? document.getElementById('others_specify').value : null,
             
             signature: signatureData 

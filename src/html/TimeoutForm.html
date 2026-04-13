@@ -73,15 +73,12 @@
                             </tbody>
                     </table>
                 </div>
-                <div class="modal-footer">
-                    <label>To be Considered:</label>
-                    <select id="considerationSelect">
-                        <option value=""></option>
-                        <option value="Rest">Rest</option>
-                        <option value="Hospital">Hospital</option>
-                    </select>
+                
+                <div class="modal-footer" style="margin-top: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">To be Considered:</label>
+                    <input type="text" id="considerationInput" placeholder="Specify (e.g., Rest, Hospital, etc.)" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; box-sizing: border-box;">
                 </div>
-                <button class="modal-submit-btn" onclick="submitSymptoms()">Submit</button>
+                <button class="modal-submit-btn" style="margin-top: 15px;" onclick="submitSymptoms()">Submit</button>
             </div>
 
             <div id="medicineQuestionModal" class="custom-modal">

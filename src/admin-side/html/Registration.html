@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Registration</title>
+    <link rel="stylesheet" href="/admin-side/css/AdminAuth.css">
+</head>
+<body>
+    <div class="split-container">
+        <div class="left-panel" style="background: linear-gradient(135deg, rgba(58, 168, 86, 0.85) 0%, rgba(80, 200, 120, 0.85) 100%), url('/images/bsu-bg.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+            <h1>HEALTH SERVICES <br> ADMIN PORTAL</h1>
+        </div>
+        <div class="right-panel">
+            <div class="logos-top-right">
+                <img src="../images/health_service_logo.png" alt="Health Service Logo">
+            </div>
+            <div class="logos-top-left">
+                <img src="../images/bsu_logo.png" alt="BSU Logo">
+            </div>
+            <div class="auth-form-container">
+                <h2>Register your Account</h2>
+                <form id="adminRegisterForm">
+                    <div class="input-group">
+                        <label>Employee ID Number</label>
+                        <input type="text" id="regIdNumber" placeholder="e.g. 60582" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Full Name</label>
+                        <input type="text" id="regFullName" placeholder="Juan Dela Cruz" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Username</label>
+                        <input type="text" id="regUsername" placeholder="Juan_Admin" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Clinic Email Address</label>
+                        <input type="email" id="regEmail" value="healthservices@g.batstate-u.edu.ph" readonly style="background-color: #e5e7eb; cursor: not-allowed;">
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="regPassword" placeholder="Create password" required>
+                            <span class="toggle-password" onclick="toggleVisibility('regPassword', this)">👁</span>
+                        </div>
+                        <span style="font-size: 12px; color: #888; margin-top: 6px; display: inline-block; line-height: 1.4;">
+                            * Must be at least 8 characters, include 1 uppercase letter, 1 lowercase letter, and 1 number.
+                        </span>
+                    </div>
+                    <div class="input-group">
+                        <label>Confirm Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="regConfirmPassword" placeholder="Confirm password" required>
+                            <span class="toggle-password" onclick="toggleVisibility('regConfirmPassword', this)">👁</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="auth-btn">Sign Up</button>
+                </form>
+                <div class="switch-page">
+                    Already have an account? <a href="javascript:void(0)" onclick="transitionTo('/admin/login')">Sign In</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/admin-side/js/AdminAuth.js"></script>
+</body>
+</html>

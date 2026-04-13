@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Profile</title>
+    <link rel="stylesheet" href="/admin-side/css/DashboardShared.css?v=2">
+    <link rel="stylesheet" href="/admin-side/css/Profile.css?v=2">
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div>
+            <div class="sidebar-header">☰</div>
+            <ul class="sidebar-menu">
+                <li class="active">PROFILE</li>
+                <li onclick="window.location.href='/admin/clients'">CLIENT MANAGEMENT</li>
+                <li>INVENTORY</li>
+                <li>REPORTS</li>
+            </ul>
+        </div>
+        <button class="logout-btn" id="sidebarLogoutBtn" onclick="window.location.href='/admin/login'">Log out</button>
+    </div>
+
+    <div class="main-content">
+        <h1 class="page-title">PROFILE</h1>
+        
+        <div class="profile-header">
+            <div class="avatar">👤</div>
+            <div class="profile-info">
+                <h2 id="adminName">Loading... <span class="edit-icon">✏️</span></h2>
+                <p>ID Number: <span id="adminId">Loading...</span></p>
+                <p>Position: <span id="adminPosition">Loading...</span></p>
+            </div>
+        </div>
+
+        <div class="other-details">
+            <h3>Other Details:</h3>
+            <div class="detail-row"><span class="label">Department:</span> <span class="value" id="adminDept">Loading...</span></div>
+            <div class="detail-row"><span class="label">Employment Status:</span> <span class="value" id="adminStatus">Loading...</span></div>
+            <div class="detail-row"><span class="label">Employment Type:</span> <span class="value" id="adminType">Loading...</span></div>
+            <div class="detail-row align-center" style="margin-top: 20px;">
+                <span class="label">Password:</span> 
+                <button class="btn-change-pass">Change password</button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr><th>No.</th><th>ID Number</th><th>Name</th><th>Date</th><th>Log in</th><th>Log out</th></tr>
+                </thead>
+                <tbody id="logTableBody">
+                    <tr><td colspan="6" style="text-align:center;">Loading data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="signature-container">
+            <h3>Electronic Signature</h3>
+            
+            <div class="canvas-wrapper">
+                <div id="signatureOverlay" class="pad-overlay">
+                    <span>Click "Time out" in the table above to unlock</span>
+                </div>
+                <canvas id="signatureCanvas"></canvas>
+            </div>
+            
+            <p>Please place your electronic signature above.</p>
+            <button class="btn-yellow" id="saveSignatureBtn" disabled style="opacity: 0.5; cursor: not-allowed;">Submit</button>
+            <button class="btn-white" id="clearSignatureBtn" disabled style="opacity: 0.5; cursor: not-allowed;">Clear</button>
+        </div>
+    </div>
+
+    <script src="/admin-side/js/Profile.js?v=2"></script>
+</body>
+</html>

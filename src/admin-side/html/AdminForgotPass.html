@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgot Password - Admin Portal</title>
+    <link rel="stylesheet" href="/admin-side/css/AdminAuth.css">
+</head>
+<body>
+    <div class="split-container">
+        <div class="left-panel" style="background: linear-gradient(135deg, rgba(58, 168, 86, 0.85) 0%, rgba(80, 200, 120, 0.85) 100%), url('/images/bsu-bg.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+            <h1>HEALTH SERVICES <br> ADMIN PORTAL</h1>
+        </div>
+        <div class="right-panel">
+            <div class="logos-top-right">
+                <img src="../images/health_service_logo.png" alt="Health Service Logo">
+            </div>
+            <div class="logos-top-left">
+                <img src="../images/bsu_logo.png" alt="BSU Logo">
+            </div>
+            <div class="auth-form-container">
+                
+                <div id="step1">
+                    <h2>Forgot Password</h2>
+                    <p style="color: #666; margin-bottom: 25px; font-size: 15px; line-height: 1.5;">Enter your username. We will send a 6-digit verification code to the clinic's official email.</p>
+                    <form id="sendCodeForm">
+                        <div class="input-group">
+                            <label>Username</label>
+                            <input type="text" id="resetUsername" placeholder="Enter your username" required>
+                        </div>
+                        <button type="submit" class="auth-btn btn-green">Send Verification Code</button>
+                    </form>
+                    <div class="switch-page">
+                        Remember your password? <a href="javascript:void(0)" onclick="transitionTo('/admin/login')">Back to Login</a>
+                    </div>
+                </div>
+
+                <div id="step2" style="display: none;">
+                    <h2>Check Clinic Email</h2>
+                    <p style="color: #666; margin-bottom: 25px; font-size: 15px; line-height: 1.5;">Enter the 6-digit code sent to the clinic inbox.</p>
+                    <form id="verifyCodeForm">
+                        <div class="input-group">
+                            <label>6-Digit Code</label>
+                            <input type="text" id="resetCode" maxlength="6" placeholder="123456" required autocomplete="off" style="letter-spacing: 5px; font-size: 22px; text-align: center; font-weight: bold;">
+                        </div>
+                        <button type="submit" class="auth-btn btn-green">Verify Code</button>
+                    </form>
+                </div>
+
+                <div id="step3" style="display: none;">
+                    <h2>Create New Password</h2>
+                    <form id="newPassForm">
+                        <div class="input-group">
+                            <label>New Password</label>
+                            <input type="password" id="newPass" placeholder="Enter new password" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" id="confirmNewPass" placeholder="Confirm new password" required>
+                        </div>
+                        <button type="submit" class="auth-btn btn-green">Save New Password</button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script src="/admin-side/js/AdminAuth.js"></script>
+</body>
+</html>

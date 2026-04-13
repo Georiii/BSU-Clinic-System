@@ -144,7 +144,8 @@ input[readonly] {
     color: #666666; 
 }
 
-#certTypeGroup, #othersSpecifyGroup, #otherNeedsGroup, #pwdTypeGroup {
+/* UPDATED WITH dentalServiceGroup */
+#certTypeGroup, #otherNeedsGroup, #othersSpecifyGroup, #pwdTypeGroup, #dentalServiceGroup {
     transition: all 0.3s ease-in-out;
     animation: fadeIn 0.3s ease-in-out;
 }

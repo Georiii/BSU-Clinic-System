@@ -11,8 +11,11 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
-    "mysql2": "^3.18.2"
+    "mysql2": "^3.18.2",
+    "nodemailer": "^8.0.4"
   },
   "repository": {
     "type": "git",

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Client Management</title>
+    <link rel="stylesheet" href="/admin-side/css/DashboardShared.css">
+    <link rel="stylesheet" href="/admin-side/css/ClientManagement.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div>
+            <div class="sidebar-header">☰</div>
+            <ul class="sidebar-menu">
+                <li onclick="window.location.href='Profile.html'">PROFILE</li>
+                <li class="active">CLIENT MANAGEMENT</li>
+                <li>INVENTORY</li>
+                <li>REPORTS</li>
+            </ul>
+        </div>
+        <button class="logout-btn" onclick="window.location.href='/admin/login'">Log out</button>
+    </div>
+
+    <div class="main-content">
+        <h1 class="page-title">CLIENT MANAGEMENT</h1>
+        
+        <div class="top-bar">
+            <div class="date-picker-container">
+                <input type="text" placeholder="3/20/2026 - 3/24/2026 📅" class="top-input date-input">
+            </div>
+            <div class="search-filter-container">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search ID Number or Name" class="top-input search-input">
+                    <span class="search-icon">🔍</span>
+                </div>
+                <img src="/images/filter-icon.png" alt="Filter" class="filter-icon" onclick="openModal('filterModal')">
+            </div>
+            <button class="btn-green" onclick="downloadExcel()">Download all records</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('student', this)">Student</button>
+            <button class="tab-btn" onclick="switchTab('employee', this)">Employee</button>
+            <button class="tab-btn" onclick="switchTab('visitor', this)">Visitor</button>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr><th>No.</th><th>ID Number</th><th>Name</th><th>Purpose</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="clientTableBody"></tbody>
+        </table>
+        
+        <div class="pagination">
+            <span>←</span> <span class="page active">1</span> <span>2</span> <span>3</span> <span>4</span> <span>5</span> <span>→</span>
+        </div>
+    </div>
+
+    <div id="viewModal" class="modal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div class="modal-header">
+                <h2>View Visit Information</h2>
+                <span class="close" onclick="closeModal('viewModal')">&times;</span>
+            </div>
+            <div class="modal-body read-only-modal">
+                <p><strong>Name:</strong> <span id="vName"></span></p>
+                <p><strong>ID/SR-Code:</strong> <span id="vId"></span></p>
+                
+                <p id="vDeptProgRow" style="display:none;"><strong>Department & Program:</strong> <span id="vDeptProg"></span></p>
+                <p id="vEmpDetailsRow" style="display:none;"><strong>Dept/Pos/Status:</strong> <span id="vEmpDetails"></span></p>
+
+                <p><strong>Date of visit:</strong> <span id="vDate"></span></p>
+                <p><strong>Time In:</strong> <span id="vTimeIn"></span></p>
+                <p><strong>Time Out:</strong> <span id="vTimeOut"></span></p>
+                <p><strong>Age:</strong> <span id="vAge"></span></p>
+                <p><strong>Gender:</strong> <span id="vGender"></span></p>
+                <p><strong>Special needs:</strong> <span id="vSpecial">None</span></p>
+                <p><strong>Purpose of visit:</strong> <span id="vPurpose"></span></p>
+                <p><strong>Marked as confined?</strong> <span id="vConfined"></span></p>
+                <p><strong>Status:</strong> <span id="vStatus"></span></p>
+                
+                <div class="modal-sig-box">
+                    <img id="vSignature" src="" alt="Client Signature">
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn-green">Download record</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content" style="max-width: 950px; padding: 0;">
+            <div class="modal-header" style="padding: 20px 30px; background: #fff; border-radius: 12px 12px 0 0;">
+                <h2 style="margin:0;">Edit Visit Information: <span id="editTitleName"></span></h2>
+                <span class="close" onclick="closeModal('editModal')">&times;</span>
+            </div>
+            <div class="modal-split">
+                <div class="modal-left">
+                    <h3>Patient & Audit Details (Read-Only)</h3>
+                    <div class="edit-grid">
+                        <label>ID NUMBER:</label><input type="text" id="eId" readonly class="readonly-input">
+                        <label>DATE:</label><input type="text" id="eDate" readonly class="readonly-input">
+                        <label>TIME IN:</label><input type="text" id="eTimeIn" readonly class="readonly-input">
+                        <label>TIME OUT:</label><input type="text" id="eTimeOut" readonly class="readonly-input">
+                        <label>NAME:</label><input type="text" id="eName" readonly class="readonly-input">
+                        
+                        <div id="eStudentFields" style="display:none; grid-column: 1 / span 2; display: grid; grid-template-columns: 120px 1fr; gap: 10px;">
+                            <label>DEPARTMENT:</label><input type="text" id="eDept" readonly class="readonly-input">
+                            <label>PROGRAM:</label><input type="text" id="eProg" readonly class="readonly-input">
+                        </div>
+                        
+                        <label>AGE:</label><input type="text" id="eAge" readonly class="readonly-input">
+                        <label>GENDER:</label><input type="text" id="eGender" readonly class="readonly-input">
+                    </div>
+                    <div class="modal-sig-box" style="margin-top: 20px; background: white;">
+                        <img id="eSignature" src="" alt="Signature">
+                        <p style="font-size:10px; text-align:center; margin:5px 0 0 0; font-weight:bold;">Client Signature (View Only)</p>
+                    </div>
+                </div>
+                
+                <div class="modal-right">
+                    <h3>Update Visit Record (Editable Actions)</h3>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <label>Blood Pressure:</label> <input type="text" id="eBP" class="edit-input" style="width: 50%;">
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <label>Special Needs:</label> 
+                        <select id="eSpecial" class="edit-input" style="width: 50%;">
+                            <option>None</option><option>PWD</option><option>Others</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <label>Disability Type:</label> 
+                        <select id="eDisability" class="edit-input" style="width: 50%;">
+                            <option>N/A</option><option>Psychosocial</option>
+                        </select>
+                    </div>
+                    
+                    <label style="margin-top:15px; display:block; font-weight:bold;">Purpose(s) of Visit:</label>
+                    <div class="checkbox-grid">
+                        <label><input type="checkbox"> Medical Consult/Medicine</label>
+                        <label><input type="checkbox"> Blood Pressure</label>
+                        <label><input type="checkbox"> Medical Certificate</label>
+                        <label><input type="checkbox"> Others <input type="text" placeholder="Specify.." style="width:100%; border:1px solid #ccc; border-radius:4px; padding:4px; margin-top:4px;"></label>
+                        <label><input type="checkbox"> Dental</label>
+                        <label><input type="checkbox"> Pre-enrolment</label>
+                    </div>
+
+                    <label style="margin-top:15px; display:block; font-weight:bold;">Certificate Status:</label>
+                    <select id="eCertStatus" class="edit-input" style="width:100%;">
+                        <option>On-Hold - Follow up</option>
+                        <option>Completed</option>
+                    </select>
+
+                    <label style="margin-top:15px; display:block; font-weight:bold;">Remarks / Notes:</label>
+                    <textarea id="eRemarks" class="edit-input" rows="4" style="width:100%;"></textarea>
+
+                    <div style="text-align: right; margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                        <button class="btn-white" onclick="closeModal('editModal')">Cancel</button>
+                        <button class="btn-yellow" onclick="saveEdit()">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="filterModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2>Filter by</h2>
+                <span class="close" onclick="closeModal('filterModal')">&times;</span>
+            </div>
+            
+            <div class="filter-grid">
+                <div>
+                    <h4>Gender</h4>
+                    <label><input type="checkbox"> Male</label>
+                    <label><input type="checkbox"> Female</label>
+                    <label><input type="checkbox"> Prefer not to say</label>
+                    <label><input type="checkbox"> Others</label>
+                </div>
+                <div>
+                    <h4>Name</h4>
+                    <label><input type="radio" name="sort"> Ascended A-Z</label>
+                    <label><input type="radio" name="sort"> Descended Z-A</label>
+                </div>
+                <div>
+                    <h4>Purpose of Visit</h4>
+                    <label><input type="checkbox"> Medical Consult/Medicine</label>
+                    <label><input type="checkbox"> Dental</label>
+                    <label><input type="checkbox"> Medical Certificate</label>
+                    <label><input type="checkbox"> Blood Pressure</label>
+                    <label><input type="checkbox"> Others</label>
+                </div>
+                <div>
+                    <h4>Status</h4>
+                    <label><input type="checkbox"> Completed</label>
+                    <label><input type="checkbox"> On-Hold</label>
+                    <label><input type="checkbox"> In-Clinic</label>
+                    <h4 style="margin-top: 15px;">Special Needs</h4>
+                    <label><input type="checkbox"> None</label>
+                    <label><input type="checkbox"> PWD</label>
+                    <label><input type="checkbox"> Others</label>
+                </div>
+                
+                <div id="filterDept" style="display:none; grid-column: 1;">
+                    <h4>Department</h4>
+                    <label><input type="checkbox"> CICS</label>
+                    <label><input type="checkbox"> CAS/CCJE</label>
+                    <label><input type="checkbox"> CABEIHM</label>
+                    <label><input type="checkbox"> CET</label>
+                    <label><input type="checkbox"> CTE</label>
+                </div>
+                <div id="filterEmpDetails" style="display:none; grid-column: 1 / span 2; display: flex; gap: 40px;">
+                    <div>
+                        <h4>Employment Type</h4>
+                        <label><input type="checkbox"> Non-Teaching</label>
+                        <label><input type="checkbox"> Teaching</label>
+                    </div>
+                    <div>
+                        <h4>Employment Status</h4>
+                        <label><input type="checkbox"> Casual</label>
+                        <label><input type="checkbox"> Temporary</label>
+                        <label><input type="checkbox"> Permanent</label>
+                        <label><input type="checkbox"> Contractual</label>
+                        <label><input type="checkbox"> Job Order</label>
+                        <label><input type="checkbox"> COS</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; display:flex; justify-content:center; gap:15px;">
+                <button class="btn-white" onclick="closeModal('filterModal')">Cancel</button>
+                <button class="btn-yellow">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/admin-side/js/ClientManagement.js"></script>
+</body>
+</html>
