@@ -2,8 +2,8 @@ const express = require('express');
 const path = require('path');
 const { exec } = require('child_process'); 
 const db = require('./db'); 
-const bcrypt = require('bcrypt'); // Added bcrypt for secure passwords
-const ExcelJS = require('exceljs'); // Added ExcelJS for secure Excel exports
+const bcrypt = require('bcrypt');
+const ExcelJS = require('exceljs');
 const app = express();
 const PORT = 3000;
 
@@ -28,7 +28,7 @@ app.get('/html/NewEForm.html', (req, res) => { res.sendFile(path.join(__dirname,
 app.get('/html/TimeoutForm.html', (req, res) => { res.sendFile(path.join(__dirname, '..', 'html', 'TimeoutForm.html')); });
 app.get('/html/VisitorForm.html', (req, res) => { res.sendFile(path.join(__dirname, '..', 'html', 'VisitorForm.html')); });
 
-// --- ADMIN HTML ROUTES (Fixed Folder Paths) ---
+// --- ADMIN HTML ROUTES ---
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin-side', 'html', 'ALandingPage.html'));
 });
@@ -50,7 +50,6 @@ app.get('/admin/clients', (req, res) => {
 
 // --- API ROUTES ---
 
-// NEW: GENERATE DAILY VISITOR ID
 app.get('/api/generate-visitor-id', (req, res) => {
     const sql = "SELECT idNo FROM visitor_logs WHERE visit_date = CURDATE() ORDER BY visit_id DESC LIMIT 1";
     db.query(sql, (err, result) => {
@@ -140,7 +139,7 @@ app.post('/api/register-student', (req, res) => {
     });
 });
 
-// --- TIME OUT API ROUTES WITH WORKFLOW INTEGRATION ---
+// --- TIME OUT API ROUTES ---
 app.get('/api/active-student-visits', (req, res) => {
     const sql = `SELECT v.visit_id, v.srcode, s.fullname, v.time_in, v.time_out, 
                         v.purpose_medical_consult, v.purpose_dental, v.purpose_blood_pressure, 
@@ -296,7 +295,6 @@ app.post('/api/timeout-visitor/:id', (req, res) => {
 
 // --- ADMIN API ROUTES ---
 
-// Registration route (id_number is saved to admins table)
 app.post('/api/admin-register', async (req, res) => {
     const { id_number, fullname, username, email, password } = req.body;
     
@@ -332,7 +330,6 @@ app.post('/api/admin-login', (req, res) => {
                 const match = await bcrypt.compare(password, adminUser.password);
                 
                 if (match) {
-                    // Record login time in admin_logs
                     db.query("INSERT INTO admin_logs (username, log_in) VALUES (?, NOW())", [username], (logErr) => {
                         if (logErr) console.error("Error saving log:", logErr);
                         res.status(200).json({ message: "Login successful!" });
@@ -350,7 +347,6 @@ app.post('/api/admin-login', (req, res) => {
     });
 });
 
-// Record Logout Time
 app.post('/api/admin-logout', (req, res) => {
     const { username } = req.body;
     db.query("UPDATE admin_logs SET log_out = NOW() WHERE username = ? AND log_out IS NULL ORDER BY log_in DESC LIMIT 1", [username], (err) => {
@@ -359,7 +355,7 @@ app.post('/api/admin-logout', (req, res) => {
     });
 });
 
-// --- FORGOT PASSWORD ROUTES (Terminal Version) ---
+// --- FORGOT PASSWORD ROUTES ---
 app.post('/api/forgot-password', (req, res) => {
     const { username } = req.body;
     db.query("SELECT * FROM admins WHERE username = ?", [username], (err, result) => {
@@ -412,8 +408,6 @@ app.post('/api/reset-password', async (req, res) => {
 
 // --- ADMIN DASHBOARD ROUTES ---
 
-// 1. Fetch Admin Profile & Logs
-// FIX: Uses LEFT JOIN to pull employee details safely without crashing
 app.get('/api/admin/profile', (req, res) => {
     const username = req.query.username || 'Mark_G'; 
     
@@ -436,7 +430,6 @@ app.get('/api/admin/profile', (req, res) => {
     });
 });
 
-// 2. Save Admin Signature
 app.post('/api/admin/signature', (req, res) => {
     const { username, signature } = req.body;
     db.query("UPDATE admins SET signature = ? WHERE username = ?", [signature, username], (err) => {
@@ -445,26 +438,29 @@ app.post('/api/admin/signature', (req, res) => {
     });
 });
 
-// 3. Fetch Client Management Data (Dynamic Status Logic)
+// FIXED: age and gender come from v.* (visit tables), not from joined student/employee tables
 app.get('/api/clients/:type', (req, res) => {
     const type = req.params.type;
     let sql = "";
 
     if (type === 'student') {
-        sql = `SELECT v.*, s.fullname as name, s.age, s.gender, s.department, s.program 
+        sql = `SELECT v.*, s.fullname as name, s.department, s.program 
                FROM clinic_visits v JOIN students s ON v.srcode = s.srcode 
                ORDER BY v.visit_date DESC, v.time_in DESC`;
     } else if (type === 'employee') {
-        sql = `SELECT v.*, e.fullname as name, e.age, e.gender, e.department, e.position, e.employment_status, e.employment_type 
+        sql = `SELECT v.*, e.fullname as name, e.department, e.position, e.employment_status, e.employment_type 
                FROM employee_clinic_visit v JOIN employees e ON v.employee_id = e.employee_id 
                ORDER BY v.visit_date DESC, v.time_in DESC`;
     } else {
-        sql = `SELECT *, fullname as name, age, gender FROM visitor_logs ORDER BY visit_date DESC, time_in DESC`;
+        sql = `SELECT *, fullname as name FROM visitor_logs ORDER BY visit_date DESC, time_in DESC`;
     }
 
     db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!results) return res.status(200).json([]);
+        if (err) {
+            console.error("Client query error:", err.message);
+            return res.status(200).json([]);
+        }
+        if (!results || !Array.isArray(results)) return res.status(200).json([]);
 
         const processedData = results.map(row => {
             let status = 'Completed';
@@ -483,20 +479,131 @@ app.get('/api/clients/:type', (req, res) => {
     });
 });
 
-// 4. Update Visit Record (Edit Modal)
 app.put('/api/clients/:type/:id', (req, res) => {
     const { type, id } = req.params;
-    const data = req.body;
-    let table = type === 'student' ? 'clinic_visits' : type === 'employee' ? 'employee_clinic_visit' : 'visitor_logs';
-    
-    const sql = `UPDATE ${table} SET blood_pressure = ?, cert_status = ?, remarks = ? WHERE visit_id = ?`;
-    db.query(sql, [data.blood_pressure, data.cert_status, data.remarks, id], (err) => {
-        if (err) return res.status(500).json(err);
+    const d = req.body;
+ 
+    let sql = '';
+    let params = [];
+ 
+    if (type === 'student') {
+        // clinic_visits column names:
+        //   special_needs, pwd_type,
+        //   purpose_medical_consult, purpose_dental, purpose_blood_pressure,
+        //   purpose_med_cert, purpose_pre_enrolment,
+        //   dental_service_type  ← dental sub-type
+        //   cert_type            ← med cert sub-type  (e.g. "OJT/Pre-Employment")
+        //   purpose_others       ← free-text others
+        //   blood_pressure, cert_status, remarks
+        sql = `
+            UPDATE clinic_visits SET
+                blood_pressure          = ?,
+                cert_status             = ?,
+                remarks                 = ?,
+                special_needs           = ?,
+                pwd_type                = ?,
+                purpose_medical_consult = ?,
+                purpose_blood_pressure  = ?,
+                purpose_dental          = ?,
+                purpose_med_cert        = ?,
+                purpose_pre_enrolment   = ?,
+                dental_service_type     = ?,
+                cert_type               = ?,
+                purpose_others          = ?
+            WHERE visit_id = ?
+        `;
+        params = [
+            d.blood_pressure          || null,
+            d.cert_status             || null,
+            d.remarks                 || null,
+            d.special_needs           || 'None',
+            d.pwd_type                || 'N/A',
+            d.purpose_medical_consult || 0,
+            d.purpose_blood_pressure  || 0,
+            d.purpose_dental          || 0,
+            d.purpose_med_cert        || 0,
+            d.purpose_pre_enrolment   || 0,
+            d.dental_service_type     || null,
+            d.cert_type               || null,   // ← med cert sub-type for students
+            d.purpose_others          || null,
+            id
+        ];
+ 
+    } else if (type === 'employee') {
+        // employee_clinic_visit column names:
+        //   special_needs, pwd_type,
+        //   purpose_of_visit     ← rebuilt from checkboxes
+        //   dental_service_type  ← dental sub-type
+        //   certificate_type     ← med cert sub-type  (e.g. "OJT/Pre-Employment")
+        //   others_specify       ← free-text others
+        //   blood_pressure, cert_status, remarks
+ 
+        // Rebuild purpose_of_visit string from boolean flags sent by JS
+        const purposeParts = [];
+        if (d.purpose_medical_consult) purposeParts.push('Medical Consult/Medicine');
+        if (d.purpose_blood_pressure)  purposeParts.push('Blood Pressure');
+        if (d.purpose_dental)          purposeParts.push('Dental');
+        if (d.purpose_med_cert)        purposeParts.push('Medical Certificate');
+        if (d.purpose_pre_enrolment)   purposeParts.push('Pre-enrolment');
+        if (d.others_specify)          purposeParts.push('Others');
+        const purposeOfVisit = purposeParts.join(', ') || null;
+ 
+        sql = `
+            UPDATE employee_clinic_visit SET
+                blood_pressure      = ?,
+                cert_status         = ?,
+                remarks             = ?,
+                special_needs       = ?,
+                pwd_type            = ?,
+                purpose_of_visit    = ?,
+                dental_service_type = ?,
+                certificate_type    = ?,
+                others_specify      = ?
+            WHERE visit_id = ?
+        `;
+        params = [
+            d.blood_pressure      || null,
+            d.cert_status         || null,
+            d.remarks             || null,
+            d.special_needs       || 'None',
+            d.pwd_type            || 'N/A',
+            purposeOfVisit,
+            d.dental_service_type || null,
+            d.certificate_type    || null,   // ← med cert sub-type for employees
+            d.others_specify      || null,
+            id
+        ];
+ 
+    } else {
+        // visitor_logs — simpler, no boolean purpose columns
+        sql = `
+            UPDATE visitor_logs SET
+                blood_pressure = ?,
+                cert_status    = ?,
+                remarks        = ?,
+                special_needs  = ?,
+                pwd_type       = ?
+            WHERE visit_id = ?
+        `;
+        params = [
+            d.blood_pressure || null,
+            d.cert_status    || null,
+            d.remarks        || null,
+            d.special_needs  || 'None',
+            d.pwd_type       || 'N/A',
+            id
+        ];
+    }
+ 
+    db.query(sql, params, (err) => {
+        if (err) {
+            console.error("Update error:", err.message);
+            return res.status(500).json({ error: err.message });
+        }
         res.json({ message: "Record updated successfully!" });
     });
 });
 
-// 5. Download Excel (Secured with ExcelJS)
 app.get('/api/export/:type', async (req, res) => {
     const type = req.params.type;
     let sql = "";
@@ -554,6 +661,77 @@ app.get('/api/export/:type', async (req, res) => {
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="${type}_records.xlsx"`);
 
+        await workbook.xlsx.write(res);
+        res.end();
+    });
+});
+
+// NEW: Export single visit record as Excel
+app.get('/api/export-single/:type/:id', async (req, res) => {
+    const { type, id } = req.params;
+    let sql = "";
+
+    if (type === 'student') {
+        sql = `SELECT v.*, s.fullname as name, s.department, s.program 
+               FROM clinic_visits v JOIN students s ON v.srcode = s.srcode 
+               WHERE v.visit_id = ?`;
+    } else if (type === 'employee') {
+        sql = `SELECT v.*, e.fullname as name, e.department, e.position, e.employment_status, e.employment_type 
+               FROM employee_clinic_visit v JOIN employees e ON v.employee_id = e.employee_id 
+               WHERE v.visit_id = ?`;
+    } else {
+        sql = `SELECT *, fullname as name FROM visitor_logs WHERE visit_id = ?`;
+    }
+
+    db.query(sql, [id], async (err, results) => {
+        if (err || results.length === 0) return res.status(500).json({ error: 'Record not found' });
+
+        const r = results[0];
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Visit Record');
+
+        worksheet.columns = [
+            { header: 'Field', key: 'field', width: 25 },
+            { header: 'Value', key: 'value', width: 40 }
+        ];
+        worksheet.getRow(1).font = { bold: true };
+
+        const idVal = r.srcode || r.employee_id || r.idNo || 'N/A';
+
+        let purposes = [];
+        if (r.purpose_medical_consult) purposes.push('Medical Consult/Medicine');
+        if (r.purpose_dental) purposes.push('Dental');
+        if (r.purpose_blood_pressure) purposes.push('Blood Pressure');
+        if (r.purpose_med_cert) purposes.push('Medical Certificate');
+        if (r.purpose_pre_enrolment) purposes.push('Pre-enrolment');
+        if (r.purpose) purposes.push(r.purpose);
+
+        const rows = [
+            { field: 'Name', value: r.name || r.fullname || 'N/A' },
+            { field: 'ID / SR-Code', value: idVal },
+            { field: 'Department', value: r.department || 'N/A' },
+            { field: 'Program', value: r.program || 'N/A' },
+            { field: 'Position', value: r.position || 'N/A' },
+            { field: 'Employment Status', value: r.employment_status || 'N/A' },
+            { field: 'Employment Type', value: r.employment_type || 'N/A' },
+            { field: 'Date of Visit', value: r.visit_date ? new Date(r.visit_date).toLocaleDateString() : 'N/A' },
+            { field: 'Time In', value: r.time_in || 'N/A' },
+            { field: 'Time Out', value: r.time_out || 'N/A' },
+            { field: 'Age', value: r.age != null ? String(r.age) : 'N/A' },
+            { field: 'Gender', value: r.gender || 'N/A' },
+            { field: 'Special Needs', value: r.special_needs || 'None' },
+            { field: 'Purpose of Visit', value: purposes.length > 0 ? purposes.join(', ') : 'N/A' },
+            { field: 'Blood Pressure', value: r.blood_pressure || 'N/A' },
+            { field: 'Marked as Confined', value: r.is_confined || 'No' },
+            { field: 'Certificate Status', value: r.cert_status || 'N/A' },
+            { field: 'Remarks', value: r.remarks || 'N/A' },
+            { field: 'Signature', value: r.signature ? '[Signature on file - see system]' : 'No signature on file' },
+        ];
+
+        worksheet.addRows(rows);
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="visit_record_${idVal}.xlsx"`);
         await workbook.xlsx.write(res);
         res.end();
     });

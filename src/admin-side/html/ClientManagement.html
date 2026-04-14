@@ -11,7 +11,7 @@
         <div>
             <div class="sidebar-header">☰</div>
             <ul class="sidebar-menu">
-                <li onclick="window.location.href='Profile.html'">PROFILE</li>
+                <li onclick="window.location.href='/admin/profile'">PROFILE</li>
                 <li class="active">CLIENT MANAGEMENT</li>
                 <li>INVENTORY</li>
                 <li>REPORTS</li>
@@ -25,7 +25,7 @@
         
         <div class="top-bar">
             <div class="date-picker-container">
-                <input type="text" placeholder="3/20/2026 - 3/24/2026 📅" class="top-input date-input">
+                <input type="date" class="top-input date-input" style="width: 160px; padding: 11px;">
             </div>
             <div class="search-filter-container">
                 <div class="search-box">
@@ -56,7 +56,7 @@
     </div>
 
     <div id="viewModal" class="modal">
-        <div class="modal-content" style="max-width: 650px;">
+        <div class="modal-content view-modal-content">
             <div class="modal-header">
                 <h2>View Visit Information</h2>
                 <span class="close" onclick="closeModal('viewModal')">&times;</span>
@@ -64,10 +64,8 @@
             <div class="modal-body read-only-modal">
                 <p><strong>Name:</strong> <span id="vName"></span></p>
                 <p><strong>ID/SR-Code:</strong> <span id="vId"></span></p>
-                
-                <p id="vDeptProgRow" style="display:none;"><strong>Department & Program:</strong> <span id="vDeptProg"></span></p>
+                <p id="vDeptProgRow" style="display:none;"><strong>Department &amp; Program:</strong> <span id="vDeptProg"></span></p>
                 <p id="vEmpDetailsRow" style="display:none;"><strong>Dept/Pos/Status:</strong> <span id="vEmpDetails"></span></p>
-
                 <p><strong>Date of visit:</strong> <span id="vDate"></span></p>
                 <p><strong>Time In:</strong> <span id="vTimeIn"></span></p>
                 <p><strong>Time Out:</strong> <span id="vTimeOut"></span></p>
@@ -77,161 +75,243 @@
                 <p><strong>Purpose of visit:</strong> <span id="vPurpose"></span></p>
                 <p><strong>Marked as confined?</strong> <span id="vConfined"></span></p>
                 <p><strong>Status:</strong> <span id="vStatus"></span></p>
-                
                 <div class="modal-sig-box">
-                    <img id="vSignature" src="" alt="Client Signature">
+                    <img id="vSignature" src="" alt="Client Signature" style="max-width:100%; max-height:100%; object-fit:contain; display:none;">
+                    <span id="vSigPlaceholder" style="color:#aaa; font-size:13px;">No signature on file</span>
                 </div>
-                <div style="text-align: center; margin-top: 20px;">
-                    <button class="btn-green">Download record</button>
+                <div style="text-align:center; margin-top:20px;">
+                    <button class="btn-green" onclick="downloadVisitRecord()">Download record</button>
                 </div>
             </div>
         </div>
     </div>
 
     <div id="editModal" class="modal">
-        <div class="modal-content" style="max-width: 950px; padding: 0;">
-            <div class="modal-header" style="padding: 20px 30px; background: #fff; border-radius: 12px 12px 0 0;">
-                <h2 style="margin:0;">Edit Visit Information: <span id="editTitleName"></span></h2>
+        <div class="modal-content edit-modal-content">
+
+            <div class="edit-modal-header">
+                <h2>Edit Visit Information: <span id="editTitleName" style="color:#50C878;"></span></h2>
                 <span class="close" onclick="closeModal('editModal')">&times;</span>
             </div>
+
             <div class="modal-split">
+
                 <div class="modal-left">
-                    <h3>Patient & Audit Details (Read-Only)</h3>
+                    <p class="panel-label">Patient &amp; Audit Details</p>
+
                     <div class="edit-grid">
-                        <label>ID NUMBER:</label><input type="text" id="eId" readonly class="readonly-input">
-                        <label>DATE:</label><input type="text" id="eDate" readonly class="readonly-input">
-                        <label>TIME IN:</label><input type="text" id="eTimeIn" readonly class="readonly-input">
-                        <label>TIME OUT:</label><input type="text" id="eTimeOut" readonly class="readonly-input">
-                        <label>NAME:</label><input type="text" id="eName" readonly class="readonly-input">
-                        
-                        <div id="eStudentFields" style="display:none; grid-column: 1 / span 2; display: grid; grid-template-columns: 120px 1fr; gap: 10px;">
-                            <label>DEPARTMENT:</label><input type="text" id="eDept" readonly class="readonly-input">
-                            <label>PROGRAM:</label><input type="text" id="eProg" readonly class="readonly-input">
+                        <label>ID NUMBER</label>
+                        <input type="text" id="eId" readonly class="readonly-input">
+
+                        <label>DATE</label>
+                        <input type="text" id="eDate" readonly class="readonly-input">
+
+                        <label>TIME IN</label>
+                        <input type="text" id="eTimeIn" readonly class="readonly-input">
+
+                        <label>TIME OUT</label>
+                        <input type="text" id="eTimeOut" readonly class="readonly-input">
+
+                        <label>NAME</label>
+                        <input type="text" id="eName" readonly class="readonly-input">
+
+                        <div id="eStudentFields" style="display:none; grid-column:1 / span 2; display:grid; grid-template-columns:110px 1fr; gap:10px;">
+                            <label>DEPARTMENT</label>
+                            <input type="text" id="eDept" readonly class="readonly-input">
+                            <label>PROGRAM</label>
+                            <input type="text" id="eProg" readonly class="readonly-input">
                         </div>
-                        
-                        <label>AGE:</label><input type="text" id="eAge" readonly class="readonly-input">
-                        <label>GENDER:</label><input type="text" id="eGender" readonly class="readonly-input">
+
+                        <label>AGE</label>
+                        <input type="text" id="eAge" readonly class="readonly-input">
+
+                        <label>GENDER</label>
+                        <input type="text" id="eGender" readonly class="readonly-input">
                     </div>
-                    <div class="modal-sig-box" style="margin-top: 20px; background: white;">
-                        <img id="eSignature" src="" alt="Signature">
-                        <p style="font-size:10px; text-align:center; margin:5px 0 0 0; font-weight:bold;">Client Signature (View Only)</p>
+
+                    <div class="left-sig-area">
+                        <div class="modal-sig-box">
+                            <img id="eSignature" src="" alt="Signature" style="max-width:100%; max-height:100%; object-fit:contain; display:none;">
+                            <span id="eSigPlaceholder" style="color:#aaa; font-size:13px;">No signature on file</span>
+                        </div>
+                        <p class="sig-caption">Client Signature (View Only)</p>
                     </div>
                 </div>
-                
+
                 <div class="modal-right">
-                    <h3>Update Visit Record (Editable Actions)</h3>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <label>Blood Pressure:</label> <input type="text" id="eBP" class="edit-input" style="width: 50%;">
+                    <p class="panel-label">Update Visit Record</p>
+
+                    <div class="field-row">
+                        <label class="field-label">Blood Pressure:</label>
+                        <input type="text" id="eBP" class="edit-input field-value" placeholder="e.g. 120/80">
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <label>Special Needs:</label> 
-                        <select id="eSpecial" class="edit-input" style="width: 50%;">
-                            <option>None</option><option>PWD</option><option>Others</option>
+
+                    <div class="field-row">
+                        <label class="field-label">Special Needs:</label>
+                        <select id="eSpecial" class="edit-input field-value" onchange="toggleDisability(this.value)">
+                            <option value="None">None</option>
+                            <option value="PWD">PWD</option>
+                            <option value="Others">Others</option>
                         </select>
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <label>Disability Type:</label> 
-                        <select id="eDisability" class="edit-input" style="width: 50%;">
-                            <option>N/A</option><option>Psychosocial</option>
+
+                    <div class="field-row" id="disabilityRow" style="display:none;">
+                        <label class="field-label">Disability Type:</label>
+                        <select id="eDisability" class="edit-input field-value">
+                            <option value="N/A">N/A</option>
+                            <option value="Physical/Orthopedic">Physical/Orthopedic</option>
+                            <option value="Psychosocial">Psychosocial</option>
+                            <option value="Chronic Illness">Chronic Illness</option>
+                            <option value="Rare Diseases">Rare Diseases</option>
+                            <option value="Visual Impairment">Visual Impairment</option>
+                            <option value="Communication (Hearing/Speech)">Communication (Hearing/Speech)</option>
+                            <option value="Others">Others</option>
                         </select>
                     </div>
-                    
-                    <label style="margin-top:15px; display:block; font-weight:bold;">Purpose(s) of Visit:</label>
-                    <div class="checkbox-grid">
-                        <label><input type="checkbox"> Medical Consult/Medicine</label>
-                        <label><input type="checkbox"> Blood Pressure</label>
-                        <label><input type="checkbox"> Medical Certificate</label>
-                        <label><input type="checkbox"> Others <input type="text" placeholder="Specify.." style="width:100%; border:1px solid #ccc; border-radius:4px; padding:4px; margin-top:4px;"></label>
-                        <label><input type="checkbox"> Dental</label>
-                        <label><input type="checkbox"> Pre-enrolment</label>
+
+                    <div class="purpose-block">
+                        <p class="purpose-block-title">Purpose(s) of Visit</p>
+                        <div class="purpose-grid">
+
+                            <label class="purpose-check">
+                                <input type="checkbox" id="pMedConsult">
+                                <span>Medical Consult / Medicine</span>
+                            </label>
+
+                            <label class="purpose-check">
+                                <input type="checkbox" id="pBloodPressure">
+                                <span>Blood Pressure</span>
+                            </label>
+
+                            <label class="purpose-check">
+                                <input type="checkbox" id="pPreEnrol">
+                                <span>Pre-enrolment</span>
+                            </label>
+
+                            <div class="purpose-expandable">
+                                <label class="purpose-check">
+                                    <input type="checkbox" id="pOthers" onchange="toggleSubOptions('othersSub', this.checked)">
+                                    <span>Others</span>
+                                </label>
+                                <div id="othersSub" class="sub-panel" style="display:none;">
+                                    <input type="text" placeholder="Please specify..." class="edit-input" style="width:100%; box-sizing:border-box;">
+                                </div>
+                            </div>
+
+                            <div class="purpose-expandable purpose-full">
+                                <label class="purpose-check">
+                                    <input type="checkbox" id="pDental" onchange="toggleSubOptions('dentalSub', this.checked)">
+                                    <span>Dental</span>
+                                </label>
+                                <div id="dentalSub" class="sub-panel" style="display:none;">
+                                    <label class="sub-check"><input type="checkbox" name="dentalType" value="Consultation"> Consultation</label>
+                                    <label class="sub-check"><input type="checkbox" name="dentalType" value="Oral Prophylaxis"> Oral Prophylaxis</label>
+                                    <label class="sub-check"><input type="checkbox" name="dentalType" value="Tooth Extraction"> Tooth Extraction</label>
+                                    <label class="sub-check"><input type="checkbox" name="dentalType" value="Restoration"> Restoration</label>
+                                </div>
+                            </div>
+
+                            <div class="purpose-expandable purpose-full">
+                                <label class="purpose-check">
+                                    <input type="checkbox" id="pMedCert" onchange="toggleSubOptions('medCertSub', this.checked)">
+                                    <span>Medical Certificate</span>
+                                </label>
+                                <div id="medCertSub" class="sub-panel" style="display:none;">
+                                    <label class="sub-check"><input type="checkbox" name="medCertType" value="Tour/Local Off-Campus"> Tour / Local Off-Campus</label>
+                                    <label class="sub-check"><input type="checkbox" name="medCertType" value="OJT/Pre-Employment"> OJT / Pre-Employment</label>
+                                    <label class="sub-check"><input type="checkbox" name="medCertType" value="Pre-Athletic"> Pre-Athletic</label>
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
 
-                    <label style="margin-top:15px; display:block; font-weight:bold;">Certificate Status:</label>
-                    <select id="eCertStatus" class="edit-input" style="width:100%;">
-                        <option>On-Hold - Follow up</option>
-                        <option>Completed</option>
-                    </select>
+                    <div class="field-row" style="margin-top:18px;">
+                        <label class="field-label">Certificate Status:</label>
+                        <select id="eCertStatus" class="edit-input field-value">
+                            <option>On-Hold - Follow up</option>
+                            <option>Completed</option>
+                        </select>
+                    </div>
 
-                    <label style="margin-top:15px; display:block; font-weight:bold;">Remarks / Notes:</label>
-                    <textarea id="eRemarks" class="edit-input" rows="4" style="width:100%;"></textarea>
+                    <div style="margin-top:16px;">
+                        <label class="field-label" style="display:block; margin-bottom:6px;">Remarks / Notes:</label>
+                        <textarea id="eRemarks" class="edit-input" rows="4" style="width:100%; box-sizing:border-box; resize:vertical;"></textarea>
+                    </div>
 
-                    <div style="text-align: right; margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                    <div class="edit-actions">
                         <button class="btn-white" onclick="closeModal('editModal')">Cancel</button>
-                        <button class="btn-yellow" onclick="saveEdit()">Save</button>
+                        <button class="btn-yellow" onclick="saveEdit()">Save Changes</button>
                     </div>
-                </div>
-            </div>
-        </div>
+
+                </div></div></div>
     </div>
 
     <div id="filterModal" class="modal">
-        <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-content" style="max-width:700px; max-height:90vh; overflow-y:auto;">
             <div class="modal-header">
                 <h2>Filter by</h2>
                 <span class="close" onclick="closeModal('filterModal')">&times;</span>
             </div>
-            
             <div class="filter-grid">
                 <div>
                     <h4>Gender</h4>
-                    <label><input type="checkbox"> Male</label>
-                    <label><input type="checkbox"> Female</label>
-                    <label><input type="checkbox"> Prefer not to say</label>
-                    <label><input type="checkbox"> Others</label>
+                    <label><input type="checkbox" value="Male"> Male</label>
+                    <label><input type="checkbox" value="Female"> Female</label>
+                    <label><input type="checkbox" value="Prefer not to say"> Prefer not to say</label>
+                    <label><input type="checkbox" value="Others"> Others</label>
                 </div>
                 <div>
                     <h4>Name</h4>
-                    <label><input type="radio" name="sort"> Ascended A-Z</label>
-                    <label><input type="radio" name="sort"> Descended Z-A</label>
+                    <label><input type="radio" name="sort" value="asc"> Ascended A-Z</label>
+                    <label><input type="radio" name="sort" value="desc"> Descended Z-A</label>
                 </div>
                 <div>
                     <h4>Purpose of Visit</h4>
-                    <label><input type="checkbox"> Medical Consult/Medicine</label>
-                    <label><input type="checkbox"> Dental</label>
-                    <label><input type="checkbox"> Medical Certificate</label>
-                    <label><input type="checkbox"> Blood Pressure</label>
-                    <label><input type="checkbox"> Others</label>
+                    <label><input type="checkbox" value="Medical Consult/Medicine"> Medical Consult/Medicine</label>
+                    <label><input type="checkbox" value="Dental"> Dental</label>
+                    <label><input type="checkbox" value="Medical Certificate"> Medical Certificate</label>
+                    <label><input type="checkbox" value="Blood Pressure"> Blood Pressure</label>
+                    <label><input type="checkbox" value="Others"> Others</label>
                 </div>
                 <div>
                     <h4>Status</h4>
-                    <label><input type="checkbox"> Completed</label>
-                    <label><input type="checkbox"> On-Hold</label>
-                    <label><input type="checkbox"> In-Clinic</label>
-                    <h4 style="margin-top: 15px;">Special Needs</h4>
-                    <label><input type="checkbox"> None</label>
-                    <label><input type="checkbox"> PWD</label>
-                    <label><input type="checkbox"> Others</label>
+                    <label><input type="checkbox" value="Completed"> Completed</label>
+                    <label><input type="checkbox" value="On-Hold"> On-Hold</label>
+                    <label><input type="checkbox" value="In-Clinic"> In-Clinic</label>
+                    <h4 style="margin-top:15px;">Special Needs</h4>
+                    <label><input type="checkbox" value="None"> None</label>
+                    <label><input type="checkbox" value="PWD"> PWD</label>
+                    <label><input type="checkbox" value="Others"> Others</label>
                 </div>
-                
-                <div id="filterDept" style="display:none; grid-column: 1;">
+                <div id="filterDept" style="display:none; grid-column:1;">
                     <h4>Department</h4>
-                    <label><input type="checkbox"> CICS</label>
-                    <label><input type="checkbox"> CAS/CCJE</label>
-                    <label><input type="checkbox"> CABEIHM</label>
-                    <label><input type="checkbox"> CET</label>
-                    <label><input type="checkbox"> CTE</label>
+                    <label><input type="checkbox" value="CICS"> CICS</label>
+                    <label><input type="checkbox" value="CAS/CCJE"> CAS/CCJE</label>
+                    <label><input type="checkbox" value="CABEIHM"> CABEIHM</label>
+                    <label><input type="checkbox" value="CET"> CET</label>
+                    <label><input type="checkbox" value="CTE"> CTE</label>
                 </div>
-                <div id="filterEmpDetails" style="display:none; grid-column: 1 / span 2; display: flex; gap: 40px;">
+                <div id="filterEmpDetails" style="display:none; grid-column:1 / span 2; display:flex; gap:40px;">
                     <div>
                         <h4>Employment Type</h4>
-                        <label><input type="checkbox"> Non-Teaching</label>
-                        <label><input type="checkbox"> Teaching</label>
+                        <label><input type="checkbox" value="Non-Teaching"> Non-Teaching</label>
+                        <label><input type="checkbox" value="Teaching"> Teaching</label>
                     </div>
                     <div>
                         <h4>Employment Status</h4>
-                        <label><input type="checkbox"> Casual</label>
-                        <label><input type="checkbox"> Temporary</label>
-                        <label><input type="checkbox"> Permanent</label>
-                        <label><input type="checkbox"> Contractual</label>
-                        <label><input type="checkbox"> Job Order</label>
-                        <label><input type="checkbox"> COS</label>
+                        <label><input type="checkbox" value="Casual"> Casual</label>
+                        <label><input type="checkbox" value="Temporary"> Temporary</label>
+                        <label><input type="checkbox" value="Permanent"> Permanent</label>
+                        <label><input type="checkbox" value="Contractual"> Contractual</label>
+                        <label><input type="checkbox" value="Job Order"> Job Order</label>
+                        <label><input type="checkbox" value="COS"> COS</label>
                     </div>
                 </div>
             </div>
-            
-            <div style="text-align: center; margin-top: 30px; display:flex; justify-content:center; gap:15px;">
-                <button class="btn-white" onclick="closeModal('filterModal')">Cancel</button>
-                <button class="btn-yellow">Save</button>
+            <div style="text-align:center; margin-top:30px; display:flex; justify-content:center; gap:15px;">
+                <button id="cancelFilterBtn" class="btn-white">Cancel</button>
+                <button id="applyFilterBtn" class="btn-yellow">Apply</button>
             </div>
         </div>
     </div>
