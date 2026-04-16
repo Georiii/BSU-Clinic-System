@@ -1,23 +1,46 @@
 /* Profile.css - Flat Full-Screen Layout */
 
 /* Forces the grey dashboard background to white just for the profile page */
-.main-content {
-    background-color: #ffffff !important;
-}
+.main-content { background-color: #ffffff !important; }
 
 .profile-header { 
     display: flex; align-items: center; gap: 30px; margin-bottom: 50px; 
     width: 100%; box-sizing: border-box;
 }
 
-.avatar { 
-    background-color: #7b61ff; width: 140px; height: 140px; 
-    border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-    font-size: 70px; color: white; flex-shrink: 0;
+/* AVATAR INTERACTIVE STYLES */
+.avatar-container {
+    position: relative;
+    width: 140px; 
+    height: 140px; 
+    border-radius: 50%;
+    cursor: pointer;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
+.avatar-fallback {
+    background-color: #7b61ff; width: 100%; height: 100%; 
+    display: flex; align-items: center; justify-content: center; 
+    font-size: 70px; color: white; 
+}
+
+#adminAvatarImg {
+    width: 100%; height: 100%; object-fit: cover;
+}
+
+.avatar-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6); color: white; display: flex;
+    align-items: center; justify-content: center; font-weight: bold;
+    font-size: 14px; opacity: 0; transition: opacity 0.2s;
+}
+
+.avatar-container:hover .avatar-overlay { opacity: 1; }
+
 .profile-info h2 { margin: 0 0 5px 0; font-size: 36px; display: flex; align-items: center; gap: 10px; }
-.edit-icon { font-size: 18px; color: #ff6b6b; cursor: pointer; } 
+ 
 .profile-info p { margin: 6px 0; font-size: 16px; font-weight: 700; color: #555; }
 
 .other-details { 
@@ -41,7 +64,6 @@
 }
 .data-table { box-shadow: none !important; border: 1px solid #eaeaea; width: 100%; }
 
-/* Timeout Button inside the table */
 .btn-timeout {
     background-color: #4b5563; color: white; border: none; padding: 8px 16px;
     border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.2s;
@@ -75,6 +97,25 @@
     border-radius: 8px; font-weight: bold; cursor: pointer; color: #333; margin-left: 10px; 
 }
 .btn-white:hover { background: #f0f0f0; }
+
+/* --- MODAL STYLES --- */
+.modal {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.45); align-items: center; justify-content: center; z-index: 1000;
+}
+.modal-content {
+    background: #f8f9fa; border-radius: 14px; border: 2px solid #50C878;
+    padding: 30px; width: 400px; box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; }
+.close { font-size: 28px; cursor: pointer; font-weight: bold; color: #aaa; line-height: 1; }
+.close:hover { color: #333; }
+
+.modal-input {
+    width: 100%; padding: 10px; border: 1px solid #d1d5db;
+    border-radius: 6px; font-size: 14px; box-sizing: border-box;
+}
+.modal-input:focus { outline: none; border-color: #50C878; box-shadow: 0 0 0 3px rgba(80,200,120,0.15); }
 
 @media (max-width: 768px) {
     .profile-header { flex-direction: column; text-align: center; }

@@ -10,11 +10,12 @@ async function switchTab(tab, btnElement) {
     btnElement.classList.add('active');
     document.getElementById('filterDept').style.display = (tab === 'student') ? 'block' : 'none';
     document.getElementById('filterEmpDetails').style.display = (tab === 'employee') ? 'flex' : 'none';
-    
-    // Clear search and date when switching tabs
+
+    // Clear search and date range when switching tabs
     document.getElementById('searchInput').value = '';
-    document.querySelector('.date-input').value = '';
-    
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+
     await loadData();
 }
 
@@ -24,7 +25,7 @@ async function loadData() {
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
         const json = await res.json();
         currentData = Array.isArray(json) ? json : [];
-        applyFiltersAndRender(); // Changed from renderTable to applyFilters
+        applyFiltersAndRender();
     } catch (error) {
         console.error("Error loading data:", error);
         currentData = [];
@@ -35,7 +36,7 @@ async function loadData() {
 function renderTable(data) {
     const tbody = document.getElementById('clientTableBody');
     tbody.innerHTML = '';
-    
+
     if (data.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px;">No records found.</td></tr>`;
         return;
@@ -44,7 +45,7 @@ function renderTable(data) {
     data.forEach((row, index) => {
         let idVal = row.srcode || row.employee_id || row.idNo;
         let pillClass = row.dynamic_status === 'Completed' ? 'completed' : row.dynamic_status === 'In-Clinic' ? 'in-clinic' : 'on-hold';
-        
+
         let purposes = [];
         if (currentTab === 'student') {
             if (row.purpose_medical_consult) purposes.push('Medical Consult/Medicine');
@@ -78,7 +79,7 @@ function renderTable(data) {
 }
 
 // ════════════════════════════════════════════════════════════
-//  SEARCH, DATE, AND MODAL FILTER LOGIC
+//  SEARCH, DATE RANGE, AND MODAL FILTER LOGIC
 // ════════════════════════════════════════════════════════════
 
 function applyFiltersAndRender() {
@@ -94,14 +95,18 @@ function applyFiltersAndRender() {
         });
     }
 
-    // 2. Date Picker Filter (Exact Match Date)
-    const dateTerm = document.querySelector('.date-input').value; // Expects YYYY-MM-DD
-    if (dateTerm) {
+    // 2. Date Range Filter (From → To)
+    const dateFrom = document.getElementById('dateFrom').value; // YYYY-MM-DD
+    const dateTo   = document.getElementById('dateTo').value;   // YYYY-MM-DD
+
+    if (dateFrom || dateTo) {
         filteredData = filteredData.filter(row => {
             if (!row.visit_date) return false;
-            // Convert DB date to YYYY-MM-DD for comparison
             const dbDate = new Date(row.visit_date).toISOString().split('T')[0];
-            return dbDate === dateTerm;
+            if (dateFrom && dateTo) return dbDate >= dateFrom && dbDate <= dateTo;
+            if (dateFrom) return dbDate >= dateFrom;
+            if (dateTo)   return dbDate <= dateTo;
+            return true;
         });
     }
 
@@ -112,21 +117,18 @@ function applyFiltersAndRender() {
                     .map(cb => cb.value || cb.nextSibling.textContent.trim());
     };
 
-    const activeGenders = getCheckedValues('.filter-grid div:nth-child(1) input[type="checkbox"]');
+    const activeGenders  = getCheckedValues('.filter-grid div:nth-child(1) input[type="checkbox"]');
     const activePurposes = getCheckedValues('.filter-grid div:nth-child(3) input[type="checkbox"]');
-    const activeStatuses = getCheckedValues('.filter-grid div:nth-child(4) input[type="checkbox"]:not([value="PWD"]):not([value="None"]):not([value="Others"])'); 
-    
-    // Status Filter
+    const activeStatuses = getCheckedValues('.filter-grid div:nth-child(4) input[type="checkbox"]:not([value="PWD"]):not([value="None"]):not([value="Others"])');
+
     if (activeStatuses.length > 0) {
         filteredData = filteredData.filter(row => activeStatuses.includes(row.dynamic_status));
     }
 
-    // Gender Filter
     if (activeGenders.length > 0) {
         filteredData = filteredData.filter(row => activeGenders.includes(row.gender));
     }
 
-    // Purpose Filter
     if (activePurposes.length > 0) {
         filteredData = filteredData.filter(row => {
             let rowPurposes = "";
@@ -143,36 +145,30 @@ function applyFiltersAndRender() {
             } else {
                 rowPurposes = row.purpose || "";
             }
-            
-            // Check if ANY of the checked purposes exist in this row's purpose string
             return activePurposes.some(p => rowPurposes.includes(p));
         });
     }
 
     // 4. Sorting (A-Z / Z-A)
-    const sortAsc = document.querySelector('input[name="sort"][value="asc"]')?.checked;
+    const sortAsc  = document.querySelector('input[name="sort"][value="asc"]')?.checked;
     const sortDesc = document.querySelector('input[name="sort"][value="desc"]')?.checked;
-    
-    if (sortAsc) {
-        filteredData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    } else if (sortDesc) {
-        filteredData.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
-    }
+
+    if (sortAsc)  filteredData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    if (sortDesc) filteredData.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
 
     renderTable(filteredData);
 }
 
-// Attach Event Listeners to Search and Date Inputs to auto-filter as user types
+// Attach event listeners
 document.getElementById('searchInput').addEventListener('input', applyFiltersAndRender);
-document.querySelector('.date-input').addEventListener('change', applyFiltersAndRender);
+document.getElementById('dateFrom').addEventListener('change', applyFiltersAndRender);
+document.getElementById('dateTo').addEventListener('change', applyFiltersAndRender);
 
-// Attach Event Listener to "Apply" button in the Filter Modal
 document.getElementById('applyFilterBtn').addEventListener('click', () => {
     applyFiltersAndRender();
     closeModal('filterModal');
 });
 
-// Clear filters when clicking "Cancel" in modal
 document.getElementById('cancelFilterBtn').addEventListener('click', () => {
     document.querySelectorAll('.filter-grid input[type="checkbox"], .filter-grid input[type="radio"]').forEach(el => el.checked = false);
     applyFiltersAndRender();
@@ -234,13 +230,9 @@ function openViewModal(visitId) {
     let purposes = [];
     if (currentTab === 'student') {
         if (r.purpose_medical_consult) purposes.push('Medical Consult/Medicine');
-        if (r.purpose_dental) {
-            purposes.push(r.dental_service_type ? `Dental (${r.dental_service_type})` : 'Dental');
-        }
+        if (r.purpose_dental) purposes.push(r.dental_service_type ? `Dental (${r.dental_service_type})` : 'Dental');
         if (r.purpose_blood_pressure) purposes.push('Blood Pressure');
-        if (r.purpose_med_cert) {
-            purposes.push(r.cert_type ? `Medical Certificate (${r.cert_type})` : 'Medical Certificate');
-        }
+        if (r.purpose_med_cert) purposes.push(r.cert_type ? `Medical Certificate (${r.cert_type})` : 'Medical Certificate');
         if (r.purpose_pre_enrolment) purposes.push('Pre-enrolment');
         if (r.purpose_others) purposes.push(`Others: ${r.purpose_others}`);
     } else if (currentTab === 'employee') {
@@ -251,7 +243,6 @@ function openViewModal(visitId) {
     } else {
         if (r.purpose) purposes.push(r.purpose);
     }
-
     document.getElementById('vPurpose').textContent = purposes.length > 0 ? purposes.join(' | ') : 'N/A';
 
     const deptRow = document.getElementById('vDeptProgRow');
@@ -280,12 +271,12 @@ function openEditModal(visitId) {
     editingVisitId = visitId;
 
     document.getElementById('editTitleName').textContent = r.name;
-    document.getElementById('eId').value    = r.srcode || r.employee_id || r.idNo;
-    document.getElementById('eDate').value  = new Date(r.visit_date).toLocaleDateString();
-    document.getElementById('eTimeIn').value  = r.time_in;
+    document.getElementById('eId').value     = r.srcode || r.employee_id || r.idNo;
+    document.getElementById('eDate').value   = new Date(r.visit_date).toLocaleDateString();
+    document.getElementById('eTimeIn').value = r.time_in;
     document.getElementById('eTimeOut').value = r.time_out || 'N/A';
-    document.getElementById('eName').value  = r.name;
-    document.getElementById('eAge').value   = r.age || 'N/A';
+    document.getElementById('eName').value   = r.name;
+    document.getElementById('eAge').value    = r.age || 'N/A';
     document.getElementById('eGender').value = r.gender || 'N/A';
 
     const studentFields = document.getElementById('eStudentFields');
@@ -297,12 +288,12 @@ function openEditModal(visitId) {
         studentFields.style.display = 'none';
     }
 
-    document.getElementById('eBP').value        = r.blood_pressure || '';
-    document.getElementById('eCertStatus').value = r.cert_status || 'Completed';
-    document.getElementById('eRemarks').value    = r.remarks || '';
+    document.getElementById('eBP').value         = r.blood_pressure || '';
+    document.getElementById('eCertStatus').value  = r.cert_status || 'Completed';
+    document.getElementById('eRemarks').value     = r.remarks || '';
 
     const specialVal = r.special_needs || 'None';
-    document.getElementById('eSpecial').value   = specialVal;
+    document.getElementById('eSpecial').value    = specialVal;
     toggleDisability(specialVal);
     document.getElementById('eDisability').value = r.pwd_type || 'N/A';
 
@@ -319,7 +310,6 @@ function openEditModal(visitId) {
         if (r.purpose_medical_consult) document.getElementById('pMedConsult').checked = true;
         if (r.purpose_blood_pressure)  document.getElementById('pBloodPressure').checked = true;
         if (r.purpose_pre_enrolment)   document.getElementById('pPreEnrol').checked = true;
-
         if (r.purpose_dental) {
             document.getElementById('pDental').checked = true;
             toggleSubOptions('dentalSub', true);
@@ -329,7 +319,6 @@ function openEditModal(visitId) {
                 });
             }
         }
-
         if (r.purpose_med_cert) {
             document.getElementById('pMedCert').checked = true;
             toggleSubOptions('medCertSub', true);
@@ -339,20 +328,17 @@ function openEditModal(visitId) {
                 });
             }
         }
-
         if (r.purpose_others) {
             document.getElementById('pOthers').checked = true;
             toggleSubOptions('othersSub', true);
             const othersInput = document.querySelector('#othersSub input[type="text"]');
             if (othersInput) othersInput.value = r.purpose_others;
         }
-
     } else if (currentTab === 'employee') {
         const pov = r.purpose_of_visit || '';
         if (pov.includes('Medical Consult') || pov.includes('Medicine')) document.getElementById('pMedConsult').checked = true;
         if (pov.includes('Blood Pressure'))  document.getElementById('pBloodPressure').checked = true;
         if (pov.includes('Pre-enrolment'))   document.getElementById('pPreEnrol').checked = true;
-
         if (pov.includes('Dental')) {
             document.getElementById('pDental').checked = true;
             toggleSubOptions('dentalSub', true);
@@ -362,7 +348,6 @@ function openEditModal(visitId) {
                 });
             }
         }
-
         if (pov.includes('Medical Certificate') || pov.includes('Certificate')) {
             document.getElementById('pMedCert').checked = true;
             toggleSubOptions('medCertSub', true);
@@ -372,14 +357,12 @@ function openEditModal(visitId) {
                 });
             }
         }
-
         if (r.others_specify) {
             document.getElementById('pOthers').checked = true;
             toggleSubOptions('othersSub', true);
             const othersInput = document.querySelector('#othersSub input[type="text"]');
             if (othersInput) othersInput.value = r.others_specify;
         }
-
     } else {
         if (r.purpose) {
             document.getElementById('pOthers').checked = true;
@@ -421,11 +404,11 @@ async function saveEdit() {
         purpose_dental:          dentalChecked ? 1 : 0,
         purpose_med_cert:        medCertChecked ? 1 : 0,
         purpose_pre_enrolment:   document.getElementById('pPreEnrol').checked ? 1 : 0,
-        dental_service_type: dentalTypes,
-        cert_type:           medCertTypes,   
-        certificate_type:    medCertTypes,   
-        purpose_others:      othersText,     
-        others_specify:      othersText,     
+        dental_service_type:     dentalTypes,
+        cert_type:               medCertTypes,
+        certificate_type:        medCertTypes,
+        purpose_others:          othersText,
+        others_specify:          othersText,
     };
 
     try {

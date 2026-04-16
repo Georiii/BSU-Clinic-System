@@ -8,7 +8,8 @@ const app = express();
 const PORT = 3000;
 
 // --- MIDDLEWARE ---
-app.use(express.json());
+// INCREASED LIMIT TO 10MB to accept base64 image strings safely
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '..')));
 
 // --- GLOBAL CONFIG ---
@@ -408,11 +409,12 @@ app.post('/api/reset-password', async (req, res) => {
 
 // --- ADMIN DASHBOARD ROUTES ---
 
+// FETCH PROFILE (UPDATED to include a.avatar)
 app.get('/api/admin/profile', (req, res) => {
     const username = req.query.username || 'Mark_G'; 
     
     const sql = `
-        SELECT a.fullname, a.username, a.email, a.signature, a.id_number,
+        SELECT a.fullname, a.username, a.email, a.signature, a.id_number, a.avatar,
                e.department, e.position, e.employment_status, e.employment_type
         FROM admins a
         LEFT JOIN employees e ON a.id_number = e.employee_id
@@ -427,6 +429,38 @@ app.get('/api/admin/profile', (req, res) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ profile: profileData, logs: logRes || [] });
         });
+    });
+});
+
+// NEW: Upload Avatar Route
+app.post('/api/admin/avatar', (req, res) => {
+    const { username, avatar } = req.body;
+    db.query("UPDATE admins SET avatar = ? WHERE username = ?", [avatar, username], (err) => {
+        if (err) return res.status(500).json(err);
+        res.json({ message: "Avatar updated successfully!" });
+    });
+});
+
+// NEW: Change Password Route
+app.post('/api/admin/change-password', async (req, res) => {
+    const { username, currentPassword, newPassword } = req.body;
+    
+    db.query("SELECT password FROM admins WHERE username = ?", [username], async (err, result) => {
+        if (err) return res.status(500).json(err);
+        if (result.length === 0) return res.status(404).json({ message: "User not found" });
+
+        try {
+            const match = await bcrypt.compare(currentPassword, result[0].password);
+            if (!match) return res.status(400).json({ message: "Incorrect current password" });
+
+            const hashedNew = await bcrypt.hash(newPassword, 10);
+            db.query("UPDATE admins SET password = ? WHERE username = ?", [hashedNew, username], (err) => {
+                if (err) return res.status(500).json(err);
+                res.json({ message: "Password updated successfully!" });
+            });
+        } catch (error) {
+            res.status(500).json({ message: "Server error during password change." });
+        }
     });
 });
 
@@ -487,14 +521,6 @@ app.put('/api/clients/:type/:id', (req, res) => {
     let params = [];
  
     if (type === 'student') {
-        // clinic_visits column names:
-        //   special_needs, pwd_type,
-        //   purpose_medical_consult, purpose_dental, purpose_blood_pressure,
-        //   purpose_med_cert, purpose_pre_enrolment,
-        //   dental_service_type  ← dental sub-type
-        //   cert_type            ← med cert sub-type  (e.g. "OJT/Pre-Employment")
-        //   purpose_others       ← free-text others
-        //   blood_pressure, cert_status, remarks
         sql = `
             UPDATE clinic_visits SET
                 blood_pressure          = ?,
@@ -524,21 +550,12 @@ app.put('/api/clients/:type/:id', (req, res) => {
             d.purpose_med_cert        || 0,
             d.purpose_pre_enrolment   || 0,
             d.dental_service_type     || null,
-            d.cert_type               || null,   // ← med cert sub-type for students
+            d.cert_type               || null,   
             d.purpose_others          || null,
             id
         ];
  
     } else if (type === 'employee') {
-        // employee_clinic_visit column names:
-        //   special_needs, pwd_type,
-        //   purpose_of_visit     ← rebuilt from checkboxes
-        //   dental_service_type  ← dental sub-type
-        //   certificate_type     ← med cert sub-type  (e.g. "OJT/Pre-Employment")
-        //   others_specify       ← free-text others
-        //   blood_pressure, cert_status, remarks
- 
-        // Rebuild purpose_of_visit string from boolean flags sent by JS
         const purposeParts = [];
         if (d.purpose_medical_consult) purposeParts.push('Medical Consult/Medicine');
         if (d.purpose_blood_pressure)  purposeParts.push('Blood Pressure');
@@ -569,13 +586,12 @@ app.put('/api/clients/:type/:id', (req, res) => {
             d.pwd_type            || 'N/A',
             purposeOfVisit,
             d.dental_service_type || null,
-            d.certificate_type    || null,   // ← med cert sub-type for employees
+            d.certificate_type    || null,   
             d.others_specify      || null,
             id
         ];
  
     } else {
-        // visitor_logs — simpler, no boolean purpose columns
         sql = `
             UPDATE visitor_logs SET
                 blood_pressure = ?,

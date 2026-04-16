@@ -33,7 +33,40 @@
     outline: none;
 }
 
-.date-input { width: 250px; }
+/* ── DATE RANGE PICKER ── */
+.date-range-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 4px 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.date-input-range {
+    border: none;
+    outline: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    background: transparent;
+    padding: 7px 4px;
+    width: 130px;
+    cursor: pointer;
+}
+
+.date-input-range:focus {
+    color: #50C878;
+}
+
+.date-range-sep {
+    color: #9ca3af;
+    font-size: 14px;
+    font-weight: 700;
+    user-select: none;
+}
 
 .search-input {
     width: 100%;
@@ -215,7 +248,7 @@
     max-width: 1000px;
     width: 96vw;
     padding: 0;
-    overflow: hidden;       /* children scroll independently */
+    overflow: hidden;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
@@ -239,7 +272,6 @@
     font-weight: 700;
 }
 
-/* Split layout */
 .modal-split {
     display: flex;
     flex: 1;
@@ -247,7 +279,6 @@
     border-radius: 0 0 14px 14px;
 }
 
-/* ── LEFT panel ── */
 .modal-left {
     flex: 0 0 340px;
     display: flex;
@@ -259,18 +290,16 @@
     overflow-y: auto;
 }
 
-/* ── RIGHT panel ── */
 .modal-right {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 24px 28px 0 28px;   /* no bottom padding — actions row handles it */
+    padding: 24px 28px 0 28px;
     overflow-y: auto;
     background: #fff;
     border-radius: 0 0 14px 0;
 }
 
-/* Panel section label */
 .panel-label {
     margin: 0 0 16px 0;
     font-size: 11px;
@@ -282,7 +311,6 @@
     border-bottom: 2px solid #50C878;
 }
 
-/* ── Read-only grid (left) ── */
 .edit-grid {
     display: grid;
     grid-template-columns: 108px 1fr;
@@ -310,7 +338,6 @@
     color: #374151;
 }
 
-/* Signature pushed to bottom of left panel */
 .left-sig-area {
     margin-top: auto;
     padding-top: 20px;
@@ -325,7 +352,6 @@
     letter-spacing: 0.3px;
 }
 
-/* ── Editable fields (right) ── */
 .field-row {
     display: flex;
     align-items: center;
@@ -389,7 +415,6 @@
     gap: 8px 16px;
 }
 
-/* Items that always span full width */
 .purpose-full {
     grid-column: 1 / span 2;
 }
@@ -413,14 +438,12 @@
     flex-shrink: 0;
 }
 
-/* Expandable purpose item wrapper */
 .purpose-expandable {
     display: flex;
     flex-direction: column;
     gap: 0;
 }
 
-/* Sub-panel that slides in below a parent checkbox */
 .sub-panel {
     display: flex;
     flex-wrap: wrap;
@@ -451,7 +474,6 @@
     cursor: pointer;
 }
 
-/* ── Action buttons (bottom of right panel) ── */
 .edit-actions {
     display: flex;
     justify-content: flex-end;
