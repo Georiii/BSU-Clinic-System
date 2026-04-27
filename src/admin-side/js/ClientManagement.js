@@ -1,7 +1,12 @@
 let currentTab = 'student';
 let currentData = [];
+let currentFilteredData = []; // NEW: Stores filtered data for pagination
 let editingVisitId = null;
 let viewingRecord = null;
+
+// NEW: Pagination Variables
+let currentPage = 1;
+const rowsPerPage = 10; 
 
 // Switch Tab Logic and Dynamic Filters
 async function switchTab(tab, btnElement) {
@@ -29,53 +34,8 @@ async function loadData() {
     } catch (error) {
         console.error("Error loading data:", error);
         currentData = [];
-        renderTable([]);
+        applyFiltersAndRender();
     }
-}
-
-function renderTable(data) {
-    const tbody = document.getElementById('clientTableBody');
-    tbody.innerHTML = '';
-
-    if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px;">No records found.</td></tr>`;
-        return;
-    }
-
-    data.forEach((row, index) => {
-        let idVal = row.srcode || row.employee_id || row.idNo;
-        let pillClass = row.dynamic_status === 'Completed' ? 'completed' : row.dynamic_status === 'In-Clinic' ? 'in-clinic' : 'on-hold';
-
-        let purposes = [];
-        if (currentTab === 'student') {
-            if (row.purpose_medical_consult) purposes.push('Medical Consult/Medicine');
-            if (row.purpose_dental) purposes.push('Dental');
-            if (row.purpose_blood_pressure) purposes.push('Blood Pressure');
-            if (row.purpose_med_cert) purposes.push('Medical Certificate');
-            if (row.purpose_pre_enrolment) purposes.push('Pre-enrolment');
-            if (row.purpose_others) purposes.push('Others');
-        } else if (currentTab === 'employee') {
-            if (row.purpose_of_visit) purposes.push(row.purpose_of_visit);
-        } else {
-            if (row.purpose) purposes.push(row.purpose);
-        }
-        let purposeText = purposes.length > 0 ? purposes.join(', ') : 'Various';
-
-        tbody.innerHTML += `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${idVal}</td>
-                <td>${row.name}</td>
-                <td>${purposeText}</td>
-                <td><span class="pill ${pillClass}">${row.dynamic_status}</span></td>
-                <td>
-                    <img src="/images/view-icon.png" alt="View" class="action-icon" onclick="openViewModal(${row.visit_id})">
-                    <img src="/images/edit-icon.png" alt="Edit" class="action-icon" onclick="openEditModal(${row.visit_id})">
-                    <img src="/images/print-icon.png" alt="Print" class="action-icon" onclick="window.location.href='/api/export-single/${currentTab}/${row.visit_id}'">
-                </td>
-            </tr>
-        `;
-    });
 }
 
 // ════════════════════════════════════════════════════════════
@@ -156,8 +116,111 @@ function applyFiltersAndRender() {
     if (sortAsc)  filteredData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     if (sortDesc) filteredData.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
 
-    renderTable(filteredData);
+    // NEW: Update Global Pagination State
+    currentFilteredData = filteredData;
+    currentPage = 1; // Always reset to page 1 when a filter changes
+    
+    renderPaginatedTable();
 }
+
+// NEW: Renders only the slice of data for the current page
+function renderPaginatedTable() {
+    const tbody = document.getElementById('clientTableBody');
+    tbody.innerHTML = '';
+
+    if (currentFilteredData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px;">No records found.</td></tr>`;
+        renderPaginationControls(0);
+        return;
+    }
+
+    // Calculate start and end indices for slicing the array
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    const paginatedItems = currentFilteredData.slice(startIndex, endIndex);
+
+    paginatedItems.forEach((row, index) => {
+        const actualIndex = startIndex + index + 1; // Continuous numbering across pages
+        let idVal = row.srcode || row.employee_id || row.idNo;
+        let pillClass = row.dynamic_status === 'Completed' ? 'completed' : row.dynamic_status === 'In-Clinic' ? 'in-clinic' : 'on-hold';
+
+        let purposes = [];
+        if (currentTab === 'student') {
+            if (row.purpose_medical_consult) purposes.push('Medical Consult/Medicine');
+            if (row.purpose_dental) purposes.push('Dental');
+            if (row.purpose_blood_pressure) purposes.push('Blood Pressure');
+            if (row.purpose_med_cert) purposes.push('Medical Certificate');
+            if (row.purpose_pre_enrolment) purposes.push('Pre-enrolment');
+            if (row.purpose_others) purposes.push('Others');
+        } else if (currentTab === 'employee') {
+            if (row.purpose_of_visit) purposes.push(row.purpose_of_visit);
+        } else {
+            if (row.purpose) purposes.push(row.purpose);
+        }
+        let purposeText = purposes.length > 0 ? purposes.join(', ') : 'Various';
+
+        tbody.innerHTML += `
+            <tr>
+                <td>${actualIndex}</td>
+                <td>${idVal}</td>
+                <td>${row.name}</td>
+                <td>${purposeText}</td>
+                <td><span class="pill ${pillClass}">${row.dynamic_status}</span></td>
+                <td>
+                    <img src="/images/view-icon.png" alt="View" class="action-icon" onclick="openViewModal(${row.visit_id})">
+                    <img src="/images/edit-icon.png" alt="Edit" class="action-icon" onclick="openEditModal(${row.visit_id})">
+                    <img src="/images/print-icon.png" alt="Print" class="action-icon" onclick="window.location.href='/api/export-single/${currentTab}/${row.visit_id}'">
+                </td>
+            </tr>
+        `;
+    });
+
+    renderPaginationControls(currentFilteredData.length);
+}
+
+// NEW: Generates the actual Pagination Buttons dynamically
+function renderPaginationControls(totalItems) {
+    const paginationContainer = document.getElementById('paginationControls');
+    
+    if (totalItems === 0) {
+        paginationContainer.innerHTML = '';
+        return;
+    }
+
+    const totalPages = Math.ceil(totalItems / rowsPerPage);
+    let html = '';
+
+    // Previous Button
+    const prevCursor = currentPage === 1 ? 'not-allowed' : 'pointer';
+    const prevOpacity = currentPage === 1 ? 0.5 : 1;
+    html += `<span onclick="changePage(${currentPage - 1})" style="cursor:${prevCursor}; opacity:${prevOpacity}">←</span>`;
+
+    // Page Numbers
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === currentPage) {
+            html += `<span class="page active">${i}</span>`;
+        } else {
+            html += `<span class="page" onclick="changePage(${i})">${i}</span>`;
+        }
+    }
+
+    // Next Button
+    const nextCursor = currentPage === totalPages ? 'not-allowed' : 'pointer';
+    const nextOpacity = currentPage === totalPages ? 0.5 : 1;
+    html += `<span onclick="changePage(${currentPage + 1})" style="cursor:${nextCursor}; opacity:${nextOpacity}">→</span>`;
+
+    paginationContainer.innerHTML = html;
+}
+
+// NEW: Function triggered by the dynamic pagination buttons
+window.changePage = function(page) {
+    const totalPages = Math.ceil(currentFilteredData.length / rowsPerPage);
+    if (page < 1 || page > totalPages) return; // Prevent out of bounds
+    
+    currentPage = page;
+    renderPaginatedTable();
+}
+
 
 // Attach event listeners
 document.getElementById('searchInput').addEventListener('input', applyFiltersAndRender);

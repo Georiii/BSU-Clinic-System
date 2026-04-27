@@ -1,5 +1,7 @@
 let currentAdminProfile = {};
 let isLoggingOut = false;
+let timeoutInterval;
+let needsTimeout = false; 
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -39,10 +41,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             canvas.height = canvas.offsetHeight * ratio;
             canvas.getContext("2d").scale(ratio, ratio);
             
+            // Just clear the pad to ensure it scales correctly, DO NOT auto-load DB signature
             signaturePad.clear(); 
-            if (currentAdminProfile.signature) {
-                signaturePad.fromDataURL(currentAdminProfile.signature);
-            }
         }
         
         window.addEventListener("resize", resizeCanvas);
@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const sigData = signaturePad.toDataURL('image/png');
             
             try {
+                // Save the new signature to the database
                 await fetch('/api/admin/signature', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -73,16 +74,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if(logoutRes.ok) {
                         alert("Signature Saved! Timeout recorded.");
                         
+                        // Visually clear the pad immediately
+                        signaturePad.clear();
+                        
                         document.getElementById('signatureOverlay').style.display = 'flex';
                         document.getElementById('saveSignatureBtn').disabled = true;
                         document.getElementById('clearSignatureBtn').disabled = true;
 
+                        needsTimeout = false;
                         startLogoutCountdown();
                     } else {
                         alert("Error recording timeout in database.");
                     }
                 } else {
                     alert("Signature Saved successfully!");
+                    signaturePad.clear(); // Visually clear it after saving manually too
                 }
                 
             } catch (err) {
@@ -183,6 +189,8 @@ function renderLogTable(logs) {
     const tbody = document.getElementById('logTableBody');
     tbody.innerHTML = '';
     
+    needsTimeout = logs.some(log => !log.log_out);
+    
     if (logs.length > 0) {
         logs.forEach((log, i) => {
             const timeOutDisplay = log.log_out 
@@ -222,12 +230,36 @@ function startLogoutCountdown() {
     let seconds = 10;
     const btn = document.getElementById('sidebarLogoutBtn');
     
-    const interval = setInterval(() => {
+    if(timeoutInterval) clearInterval(timeoutInterval);
+    
+    timeoutInterval = setInterval(() => {
         btn.textContent = `Log out (${seconds}s)`;
+        btn.style.setProperty('background-color', '#ef4444', 'important');
+        btn.style.setProperty('color', 'white', 'important');
+        
         if (seconds <= 0) {
-            clearInterval(interval);
+            clearInterval(timeoutInterval);
             window.location.href = '/admin/login';
         }
         seconds--;
     }, 1000);
 }
+
+// LOGOUT VALIDATION
+window.handleLogoutClick = async function() {
+    if (needsTimeout) {
+        alert("Action Required: You have an active session! Please click 'Time out' in the log table and provide your signature before logging out.");
+        document.querySelector('.data-table').scrollIntoView({ behavior: 'smooth' });
+        return;
+    }
+    
+    try {
+        await fetch('/api/admin-logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentAdminProfile.username || 'Mark_G' })
+        });
+    } catch(e) { console.error(e); }
+    
+    window.location.href = '/admin/login';
+};

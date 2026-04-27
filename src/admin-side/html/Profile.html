@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin Profile</title>
-    <link rel="stylesheet" href="/admin-side/css/DashboardShared.css?v=3">
-    <link rel="stylesheet" href="/admin-side/css/Profile.css?v=3">
+    <link rel="stylesheet" href="/admin-side/css/DashboardShared.css?v=4">
+    <link rel="stylesheet" href="/admin-side/css/Profile.css?v=4">
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 </head>
 <body>
@@ -14,11 +14,11 @@
             <ul class="sidebar-menu">
                 <li class="active">PROFILE</li>
                 <li onclick="window.location.href='/admin/clients'">CLIENT MANAGEMENT</li>
-                <li>INVENTORY</li>
+                <li onclick="window.location.href='/admin/inventory'">INVENTORY</li>
                 <li>REPORTS</li>
             </ul>
         </div>
-        <button class="logout-btn" id="sidebarLogoutBtn" onclick="window.location.href='/admin/login'">Log out</button>
+        <button class="logout-btn" id="sidebarLogoutBtn" onclick="handleLogoutClick()">Log out</button>
     </div>
 
     <div class="main-content">
@@ -101,6 +101,6 @@
         </div>
     </div>
 
-    <script src="/admin-side/js/Profile.js?v=3"></script>
+    <script src="/admin-side/js/Profile.js?v=4"></script>
 </body>
 </html>

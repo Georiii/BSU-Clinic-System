@@ -8,7 +8,6 @@ const app = express();
 const PORT = 3000;
 
 // --- MIDDLEWARE ---
-// INCREASED LIMIT TO 10MB to accept base64 image strings safely
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '..')));
 
@@ -47,6 +46,9 @@ app.get('/admin/profile', (req, res) => {
 });
 app.get('/admin/clients', (req, res) => {
      res.sendFile(path.join(__dirname, '..', 'admin-side', 'html', 'ClientManagement.html')); 
+});
+app.get('/admin/inventory', (req, res) => {
+     res.sendFile(path.join(__dirname, '..', 'admin-side', 'html', 'Inventory.html')); 
 });
 
 // --- API ROUTES ---
@@ -243,7 +245,6 @@ app.post('/api/timeout-employee/:id', (req, res) => {
     });
 });
 
-// --- VISITOR TIME OUT API ROUTES ---
 app.get('/api/active-visitor-visits', (req, res) => {
     const sql = `SELECT visit_id, idNo, fullname, time_in, time_out, purpose 
                  FROM visitor_logs 
@@ -408,8 +409,6 @@ app.post('/api/reset-password', async (req, res) => {
 });
 
 // --- ADMIN DASHBOARD ROUTES ---
-
-// FETCH PROFILE (UPDATED to include a.avatar)
 app.get('/api/admin/profile', (req, res) => {
     const username = req.query.username || 'Mark_G'; 
     
@@ -432,7 +431,6 @@ app.get('/api/admin/profile', (req, res) => {
     });
 });
 
-// NEW: Upload Avatar Route
 app.post('/api/admin/avatar', (req, res) => {
     const { username, avatar } = req.body;
     db.query("UPDATE admins SET avatar = ? WHERE username = ?", [avatar, username], (err) => {
@@ -441,7 +439,6 @@ app.post('/api/admin/avatar', (req, res) => {
     });
 });
 
-// NEW: Change Password Route
 app.post('/api/admin/change-password', async (req, res) => {
     const { username, currentPassword, newPassword } = req.body;
     
@@ -472,7 +469,6 @@ app.post('/api/admin/signature', (req, res) => {
     });
 });
 
-// FIXED: age and gender come from v.* (visit tables), not from joined student/employee tables
 app.get('/api/clients/:type', (req, res) => {
     const type = req.params.type;
     let sql = "";
@@ -682,7 +678,6 @@ app.get('/api/export/:type', async (req, res) => {
     });
 });
 
-// NEW: Export single visit record as Excel
 app.get('/api/export-single/:type/:id', async (req, res) => {
     const { type, id } = req.params;
     let sql = "";
@@ -748,6 +743,80 @@ app.get('/api/export-single/:type/:id', async (req, res) => {
 
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="visit_record_${idVal}.xlsx"`);
+        await workbook.xlsx.write(res);
+        res.end();
+    });
+});
+
+// ==========================================
+// NEW INVENTORY API ROUTES
+// ==========================================
+
+app.get('/api/inventory', (req, res) => {
+    db.query("SELECT * FROM master_medicines ORDER BY generic_name ASC", (err, results) => {
+        if (err) return res.status(500).json(err);
+        res.json(results || []);
+    });
+});
+
+app.post('/api/inventory', (req, res) => {
+    const { generic_name, brand_name, quantity, pieces, expiration_date } = req.body;
+    
+    db.query("INSERT INTO master_medicines (generic_name, brand_name, quantity, pieces, expiration_date) VALUES (?, ?, ?, ?, ?)", 
+    [generic_name, brand_name, quantity || 0, pieces || 0, expiration_date || null], (err) => {
+        if (err) return res.status(500).json(err);
+        res.json({ message: "Medicine added successfully" });
+    });
+});
+
+// CHANGED: Update query targets med_id instead of id
+app.put('/api/inventory/:id', (req, res) => {
+    const { generic_name, brand_name, quantity, pieces, expiration_date } = req.body;
+    
+    db.query("UPDATE master_medicines SET generic_name=?, brand_name=?, quantity=?, pieces=?, expiration_date=? WHERE med_id=?", 
+    [generic_name, brand_name, quantity || 0, pieces || 0, expiration_date || null, req.params.id], (err) => {
+        if (err) return res.status(500).json(err);
+        res.json({ message: "Medicine updated successfully" });
+    });
+});
+
+app.get('/api/export-inventory', async (req, res) => {
+    db.query("SELECT * FROM master_medicines ORDER BY generic_name ASC", async (err, results) => {
+        if (err) return res.status(500).json(err);
+        
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Inventory');
+        
+        worksheet.columns = [
+            { header: 'No.', key: 'index', width: 10 },
+            { header: 'Generic Name', key: 'generic_name', width: 25 },
+            { header: 'Brand Name', key: 'brand_name', width: 25 },
+            { header: 'Quantity (Box)', key: 'quantity', width: 15 },
+            { header: 'Pieces', key: 'pieces', width: 15 },
+            { header: 'Expiration Date', key: 'expiration_date', width: 20 },
+            { header: 'Status', key: 'status', width: 15 }
+        ];
+        
+        worksheet.getRow(1).font = { bold: true };
+        
+        results.forEach((row, index) => {
+            let status = 'Good';
+            if (row.expiration_date && new Date(row.expiration_date) < new Date()) status = 'Expired';
+            else if (row.quantity <= 2) status = 'Low Stock';
+            
+            worksheet.addRow({
+                index: index + 1,
+                generic_name: row.generic_name,
+                brand_name: row.brand_name,
+                quantity: row.quantity || 0,
+                pieces: row.pieces || 0,
+                expiration_date: row.expiration_date ? new Date(row.expiration_date).toLocaleDateString() : 'N/A',
+                status: status
+            });
+        });
+        
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="Inventory_Records.xlsx"`);
         await workbook.xlsx.write(res);
         res.end();
     });

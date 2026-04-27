@@ -13,7 +13,7 @@
             <ul class="sidebar-menu">
                 <li onclick="window.location.href='/admin/profile'">PROFILE</li>
                 <li class="active">CLIENT MANAGEMENT</li>
-                <li>INVENTORY</li>
+                <li onclick="window.location.href='/admin/inventory'">INVENTORY</li>
                 <li>REPORTS</li>
             </ul>
         </div>
@@ -52,9 +52,7 @@
             <tbody id="clientTableBody"></tbody>
         </table>
         
-        <div class="pagination">
-            <span>←</span> <span class="page active">1</span> <span>2</span> <span>3</span> <span>4</span> <span>5</span> <span>→</span>
-        </div>
+        <div class="pagination" id="paginationControls"></div>
     </div>
 
     <div id="viewModal" class="modal">

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Inventory</title>
+    <link rel="stylesheet" href="/admin-side/css/DashboardShared.css">
+    <link rel="stylesheet" href="/admin-side/css/Inventory.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div>
+            <div class="sidebar-header">☰</div>
+            <ul class="sidebar-menu">
+                <li onclick="window.location.href='/admin/profile'">PROFILE</li>
+                <li onclick="window.location.href='/admin/clients'">CLIENT MANAGEMENT</li>
+                <li class="active" onclick="window.location.href='/admin/inventory'">INVENTORY</li>
+                <li>REPORTS</li>
+            </ul>
+        </div>
+        <button class="logout-btn" onclick="window.location.href='/admin/login'">Log out</button>
+    </div>
+
+    <div class="main-content">
+        <h1 class="page-title">INVENTORY</h1>
+        
+        <div class="top-bar">
+            <div class="search-box">
+                <label style="display:block; font-weight:bold; font-size:14px; margin-bottom:5px; color:#111;">Search</label>
+                <input type="text" id="searchInv" placeholder="Search Generic Name or Brand Name" class="top-input search-input" style="width: 320px;">
+                <span class="search-icon" style="top:35px;">🔍</span>
+            </div>
+            
+            <div style="display:flex; align-items:flex-end; gap:15px; flex:1; justify-content:flex-end;">
+                <div>
+                    <label style="display:block; font-weight:bold; font-size:14px; margin-bottom:5px; color:#111;">Status</label>
+                    <select id="statusFilter" class="top-input" style="width: 150px; cursor:pointer;">
+                        <option value="All">[All]</option>
+                        <option value="Good">Good</option>
+                        <option value="Low Stock">Low Stock</option>
+                        <option value="Expired">Expired</option>
+                    </select>
+                </div>
+                <button class="btn-green" onclick="downloadInventory()" style="padding: 12px 25px; height: 43px;">Download inventory</button>
+            </div>
+        </div>
+
+        <div class="add-medicine-panel">
+            <h4>Add New Medicine</h4>
+            <div class="add-grid">
+                <div class="input-group">
+                    <label>Generic Name</label>
+                    <input type="text" id="addGeneric" class="inv-input">
+                </div>
+                <div class="input-group">
+                    <label>Brand Name</label>
+                    <input type="text" id="addBrand" class="inv-input">
+                </div>
+                <div class="input-group">
+                    <label>Quantity</label>
+                    <input type="number" id="addQty" class="inv-input" style="width: 80px;" min="0">
+                </div>
+                <div class="input-group">
+                    <label>Pieces</label>
+                    <input type="number" id="addPcs" class="inv-input" style="width: 80px;" min="0">
+                </div>
+                <div class="input-group">
+                    <label>Expiration Date</label>
+                    <input type="date" id="addExp" class="inv-input" style="width: 140px;">
+                </div>
+                <button class="btn-yellow" onclick="addMedicine()" style="padding: 10px 20px; border-radius:6px; font-size:13px; margin-bottom:2px;">Add<br>Medicine</button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table inv-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2">No.</th>
+                        <th rowspan="2">Generic Name</th>
+                        <th rowspan="2">Brand Name</th>
+                        <th colspan="2" style="border-bottom: 1px solid #ddd;">Stock</th>
+                        <th rowspan="2">Status</th>
+                        <th rowspan="2">Expiration Date</th>
+                        <th rowspan="2">Actions</th>
+                    </tr>
+                    <tr>
+                        <th style="border-left: 1px solid #eee;">Qty.</th>
+                        <th>Pcs.</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryTableBody">
+                    <tr><td colspan="8" style="text-align:center;">Loading inventory...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="summary-container">
+            <div class="summary-tab sum-total">
+                <div style="font-size:12px; color:#555;">Total Medicine</div>
+                <div id="countTotal" style="font-size:18px;">0</div>
+            </div>
+            <div class="summary-tab sum-low">
+                <div style="font-size:12px; color:#854d0e;">Low Stock</div>
+                <div id="countLow" style="font-size:18px;">0</div>
+            </div>
+            <div class="summary-tab sum-expired">
+                <div style="font-size:12px; color:white;">Expired</div>
+                <div id="countExpired" style="font-size:18px;">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="editInvModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Edit Medicine</h2>
+                <span class="close" onclick="closeModal('editInvModal')">&times;</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:15px; margin-top:15px;">
+                <input type="hidden" id="editId">
+                <div class="input-group">
+                    <label>Generic Name</label>
+                    <input type="text" id="editGeneric" class="inv-input">
+                </div>
+                <div class="input-group">
+                    <label>Brand Name</label>
+                    <input type="text" id="editBrand" class="inv-input">
+                </div>
+                <div style="display:flex; gap:15px;">
+                    <div class="input-group" style="flex:1;">
+                        <label>Quantity</label>
+                        <input type="number" id="editQty" class="inv-input" min="0">
+                    </div>
+                    <div class="input-group" style="flex:1;">
+                        <label>Pieces</label>
+                        <input type="number" id="editPcs" class="inv-input" min="0">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Expiration Date</label>
+                    <input type="date" id="editExp" class="inv-input">
+                </div>
+            </div>
+            <div style="text-align:right; margin-top:25px;">
+                <button class="btn-white" onclick="closeModal('editInvModal')">Cancel</button>
+                <button class="btn-green" onclick="saveEditMedicine()" style="margin-left:10px;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/admin-side/js/Inventory.js"></script>
+</body>
+</html>
