@@ -188,7 +188,21 @@ app.post('/api/timeout-student/:id', (req, res) => {
         if (data.medicines && data.medicines.length > 0) {
             const medSql = "INSERT INTO dispensed_medicines (visit_id, user_type, medicine_generic, medicine_brand, quantity_box, pieces) VALUES ?";
             const medValues = data.medicines.map(m => [visitId, 'student', m.generic, m.brand, m.quantity || null, m.pieces || null]);
-            db.query(medSql, [medValues], (err) => { if(err) console.error(err); });
+            db.query(medSql, [medValues], (err) => {
+                if(err) console.error(err);
+            });
+            // FIXED: Reduce stock in master_medicines for each dispensed medicine
+            data.medicines.forEach(m => {
+                const qtyToReduce = parseInt(m.quantity) || 0;
+                const pcsToReduce = parseInt(m.pieces) || 0;
+                if (qtyToReduce > 0 || pcsToReduce > 0) {
+                    db.query(
+                        "UPDATE master_medicines SET quantity = GREATEST(quantity - ?, 0), pieces = GREATEST(pieces - ?, 0) WHERE generic_name = ?",
+                        [qtyToReduce, pcsToReduce, m.generic],
+                        (err) => { if (err) console.error("Inventory update error:", err); }
+                    );
+                }
+            });
         }
 
         res.status(200).json({ message: "Student timed out and data saved" });
@@ -238,7 +252,21 @@ app.post('/api/timeout-employee/:id', (req, res) => {
         if (data.medicines && data.medicines.length > 0) {
             const medSql = "INSERT INTO dispensed_medicines (visit_id, user_type, medicine_generic, medicine_brand, quantity_box, pieces) VALUES ?";
             const medValues = data.medicines.map(m => [visitId, 'employee', m.generic, m.brand, m.quantity || null, m.pieces || null]);
-            db.query(medSql, [medValues], (err) => { if(err) console.error(err); });
+            db.query(medSql, [medValues], (err) => {
+                if(err) console.error(err);
+            });
+            // FIXED: Reduce stock in master_medicines for each dispensed medicine
+            data.medicines.forEach(m => {
+                const qtyToReduce = parseInt(m.quantity) || 0;
+                const pcsToReduce = parseInt(m.pieces) || 0;
+                if (qtyToReduce > 0 || pcsToReduce > 0) {
+                    db.query(
+                        "UPDATE master_medicines SET quantity = GREATEST(quantity - ?, 0), pieces = GREATEST(pieces - ?, 0) WHERE generic_name = ?",
+                        [qtyToReduce, pcsToReduce, m.generic],
+                        (err) => { if (err) console.error("Inventory update error:", err); }
+                    );
+                }
+            });
         }
 
         res.status(200).json({ message: "Employee timed out and data saved" });
@@ -288,7 +316,21 @@ app.post('/api/timeout-visitor/:id', (req, res) => {
         if (data.medicines && data.medicines.length > 0) {
             const medSql = "INSERT INTO dispensed_medicines (visit_id, user_type, medicine_generic, medicine_brand, quantity_box, pieces) VALUES ?";
             const medValues = data.medicines.map(m => [visitId, 'visitor', m.generic, m.brand, m.quantity || null, m.pieces || null]);
-            db.query(medSql, [medValues], (err) => { if(err) console.error(err); });
+            db.query(medSql, [medValues], (err) => {
+                if(err) console.error(err);
+            });
+            // FIXED: Reduce stock in master_medicines for each dispensed medicine
+            data.medicines.forEach(m => {
+                const qtyToReduce = parseInt(m.quantity) || 0;
+                const pcsToReduce = parseInt(m.pieces) || 0;
+                if (qtyToReduce > 0 || pcsToReduce > 0) {
+                    db.query(
+                        "UPDATE master_medicines SET quantity = GREATEST(quantity - ?, 0), pieces = GREATEST(pieces - ?, 0) WHERE generic_name = ?",
+                        [qtyToReduce, pcsToReduce, m.generic],
+                        (err) => { if (err) console.error("Inventory update error:", err); }
+                    );
+                }
+            });
         }
 
         res.status(200).json({ message: "Visitor timed out and data saved" });
@@ -749,7 +791,7 @@ app.get('/api/export-single/:type/:id', async (req, res) => {
 });
 
 // ==========================================
-// NEW INVENTORY API ROUTES
+// INVENTORY API ROUTES
 // ==========================================
 
 app.get('/api/inventory', (req, res) => {
@@ -769,7 +811,6 @@ app.post('/api/inventory', (req, res) => {
     });
 });
 
-// CHANGED: Update query targets med_id instead of id
 app.put('/api/inventory/:id', (req, res) => {
     const { generic_name, brand_name, quantity, pieces, expiration_date } = req.body;
     
