@@ -9,7 +9,7 @@
 <body>
     <div class="sidebar">
         <div>
-            <div class="sidebar-header">☰</div>
+            <div class="sidebar-header" onclick="toggleSidebar()" style="cursor:pointer; user-select:none;">☰</div>
             <ul class="sidebar-menu">
                 <li onclick="window.location.href='/admin/profile'">PROFILE</li>
                 <li onclick="window.location.href='/admin/clients'">CLIENT MANAGEMENT</li>
@@ -45,7 +45,18 @@
         </div>
 
         <div class="add-medicine-panel">
-            <h4>Add New Medicine</h4>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <h4 style="margin:0; font-size:15px; color:#111;">Add New Medicine</h4>
+                <div class="select-actions" id="selectActions" style="display:flex; align-items:center; gap:12px;">
+                    <label class="select-all-label">
+                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)">
+                        <span>Select All</span>
+                    </label>
+                    <button class="btn-delete" id="deleteSelectedBtn" onclick="deleteSelected()" style="display:none;">
+                        🗑 Delete Selected
+                    </button>
+                </div>
+            </div>
             <div class="add-grid">
                 <div class="input-group">
                     <label>Generic Name</label>
@@ -75,6 +86,7 @@
             <table class="data-table inv-table">
                 <thead>
                     <tr>
+                        <th rowspan="2" style="width:40px;"></th>
                         <th rowspan="2">No.</th>
                         <th rowspan="2">Generic Name</th>
                         <th rowspan="2">Brand Name</th>
@@ -89,7 +101,7 @@
                     </tr>
                 </thead>
                 <tbody id="inventoryTableBody">
-                    <tr><td colspan="8" style="text-align:center;">Loading inventory...</td></tr>
+                    <tr><td colspan="9" style="text-align:center;">Loading inventory...</td></tr>
                 </tbody>
             </table>
         </div>

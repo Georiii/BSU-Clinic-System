@@ -290,6 +290,7 @@ function openViewModal(visitId) {
     document.getElementById('vConfined').textContent = r.is_confined || 'No';
     document.getElementById('vStatus').textContent = r.dynamic_status;
 
+    // Purpose text
     let purposes = [];
     if (currentTab === 'student') {
         if (r.purpose_medical_consult) purposes.push('Medical Consult/Medicine');
@@ -319,6 +320,91 @@ function openViewModal(visitId) {
     } else {
         deptRow.style.display = 'none'; empRow.style.display = 'none';
     }
+
+    // ── TIMEOUT RESULTS ──────────────────────────────────────
+
+    // Blood Pressure
+    const bpRow = document.getElementById('vBPRow');
+    if (r.blood_pressure) {
+        document.getElementById('vBP').textContent = r.blood_pressure;
+        bpRow.style.display = 'block';
+    } else { bpRow.style.display = 'none'; }
+
+    // Certificate Status
+    const certStatusRow = document.getElementById('vCertStatusRow');
+    if (r.cert_status) {
+        document.getElementById('vCertStatus').textContent = r.cert_status;
+        certStatusRow.style.display = 'block';
+    } else { certStatusRow.style.display = 'none'; }
+
+    // Certificate Type (student uses cert_type, employee uses certificate_type)
+    const certTypeRow = document.getElementById('vCertTypeRow');
+    const certTypeVal = r.cert_type || r.certificate_type;
+    if (certTypeVal) {
+        document.getElementById('vCertType').textContent = certTypeVal;
+        certTypeRow.style.display = 'block';
+    } else { certTypeRow.style.display = 'none'; }
+
+    // Dental Service Type
+    const dentalTypeRow = document.getElementById('vDentalTypeRow');
+    if (r.dental_service_type) {
+        document.getElementById('vDentalType').textContent = r.dental_service_type;
+        dentalTypeRow.style.display = 'block';
+    } else { dentalTypeRow.style.display = 'none'; }
+
+    // Others (student uses purpose_others, employee uses others_specify)
+    const othersRow = document.getElementById('vOthersRow');
+    const othersVal = r.purpose_others || r.others_specify;
+    if (othersVal) {
+        document.getElementById('vOthers').textContent = othersVal;
+        othersRow.style.display = 'block';
+    } else { othersRow.style.display = 'none'; }
+
+    // Consideration
+    const considerationRow = document.getElementById('vConsiderationRow');
+    if (r.consideration) {
+        document.getElementById('vConsideration').textContent = r.consideration;
+        considerationRow.style.display = 'block';
+    } else { considerationRow.style.display = 'none'; }
+
+    // Remarks
+    const remarksRow = document.getElementById('vRemarksRow');
+    if (r.remarks) {
+        document.getElementById('vRemarks').textContent = r.remarks;
+        remarksRow.style.display = 'block';
+    } else { remarksRow.style.display = 'none'; }
+
+    // Symptoms
+    const sympBlock = document.getElementById('vSymptomsBlock');
+    const sympList  = document.getElementById('vSymptomsList');
+    sympList.innerHTML = '';
+    if (r.symptoms && r.symptoms.length > 0) {
+        r.symptoms.forEach(s => {
+            const tag = document.createElement('span');
+            tag.textContent = s;
+            tag.style.cssText = 'background:#d1fae5; color:#065f46; border:1px solid #34d399; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:700;';
+            sympList.appendChild(tag);
+        });
+        sympBlock.style.display = 'block';
+    } else { sympBlock.style.display = 'none'; }
+
+    // Medicines
+    const medBlock = document.getElementById('vMedicinesBlock');
+    const medTable = document.getElementById('vMedicinesTable');
+    medTable.innerHTML = '';
+    if (r.medicines && r.medicines.length > 0) {
+        r.medicines.forEach(m => {
+            medTable.innerHTML += `
+                <tr>
+                    <td style="padding:6px 10px; border-bottom:1px solid #f3f4f6;">${m.medicine_generic || 'N/A'}</td>
+                    <td style="padding:6px 10px; border-bottom:1px solid #f3f4f6;">${m.medicine_brand || 'N/A'}</td>
+                    <td style="padding:6px 10px; border-bottom:1px solid #f3f4f6; text-align:center;">${m.quantity_box || 0}</td>
+                    <td style="padding:6px 10px; border-bottom:1px solid #f3f4f6; text-align:center;">${m.pieces || 0}</td>
+                </tr>
+            `;
+        });
+        medBlock.style.display = 'block';
+    } else { medBlock.style.display = 'none'; }
 
     loadSignature('vSignature', 'vSigPlaceholder', r.signature);
     openModal('viewModal');
@@ -496,3 +582,27 @@ function downloadExcel() {
 }
 
 document.addEventListener('DOMContentLoaded', loadData);
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    const menuItems = document.querySelectorAll('.sidebar-menu li');
+    
+    sidebar.classList.toggle('collapsed');
+    
+    // Add/Remove tilt animation class to each menu item
+    menuItems.forEach((item, index) => {
+        if (sidebar.classList.contains('collapsed')) {
+            item.style.transitionDelay = `${index * 0.05}s`;
+            item.classList.add('tilt-out');
+        } else {
+            item.style.transitionDelay = `${index * 0.05}s`;
+            item.classList.remove('tilt-out');
+        }
+    });
+
+    if(sidebar.classList.contains('collapsed')) {
+        mainContent.style.width = "calc(100vw - 80px)";
+    } else {
+        mainContent.style.width = "calc(100vw - 260px)";
+    }
+}

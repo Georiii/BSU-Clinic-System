@@ -523,3 +523,37 @@
     margin-bottom: 6px;
     cursor: pointer;
 }
+
+/* ── IMPROVED SIDEBAR TOGGLE & TILT ANIMATION ── */
+.sidebar {
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-menu li {
+    transition: transform 0.4s ease, opacity 0.3s ease;
+    transform-origin: left center;
+}
+
+/* The "Tilting" animation when hiding */
+.sidebar-menu li.tilt-out {
+    transform: rotateX(90deg) translateX(-20px);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.sidebar.collapsed {
+    width: 60px; /* Slimmer when hidden */
+    min-width: 60px;
+}
+
+/* Hide everything inside the sidebar when collapsed */
+.sidebar.collapsed .sidebar-menu,
+.sidebar.collapsed .logout-btn,
+.sidebar.collapsed .sidebar-header::after {
+    display: none;
+}
+
+/* Adjust main content transition for smoothness */
+.main-content {
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}

@@ -10,7 +10,7 @@
 <body>
     <div class="sidebar">
         <div>
-            <div class="sidebar-header">☰</div>
+            <div class="sidebar-header" onclick="toggleSidebar()" style="cursor:pointer; user-select:none;">☰</div>
             <ul class="sidebar-menu">
                 <li class="active">PROFILE</li>
                 <li onclick="window.location.href='/admin/clients'">CLIENT MANAGEMENT</li>
@@ -25,7 +25,6 @@
         <h1 class="page-title">PROFILE</h1>
         
         <div class="profile-header">
-            
             <div class="avatar-container" onclick="document.getElementById('avatarUpload').click()" title="Click to change avatar">
                 <img id="adminAvatarImg" src="" style="display:none;">
                 <div id="adminAvatarFallback" class="avatar-fallback">👤</div>
@@ -64,14 +63,12 @@
 
         <div class="signature-container">
             <h3>Electronic Signature</h3>
-            
             <div class="canvas-wrapper">
                 <div id="signatureOverlay" class="pad-overlay">
                     <span>Click "Time out" in the table above to unlock</span>
                 </div>
                 <canvas id="signatureCanvas"></canvas>
             </div>
-            
             <p>Please place your electronic signature above.</p>
             <button class="btn-yellow" id="saveSignatureBtn" disabled style="opacity: 0.5; cursor: not-allowed;">Submit</button>
             <button class="btn-white" id="clearSignatureBtn" disabled style="opacity: 0.5; cursor: not-allowed;">Clear</button>
@@ -87,10 +84,8 @@
             <div style="margin-top: 20px;">
                 <label style="display:block; margin-bottom:5px; font-weight:bold;">Current Password:</label>
                 <input type="password" id="currPass" class="modal-input">
-                
                 <label style="display:block; margin:15px 0 5px 0; font-weight:bold;">New Password:</label>
                 <input type="password" id="newPass" class="modal-input">
-                
                 <label style="display:block; margin:15px 0 5px 0; font-weight:bold;">Confirm New Password:</label>
                 <input type="password" id="confNewPass" class="modal-input">
             </div>
@@ -100,7 +95,6 @@
             </div>
         </div>
     </div>
-
     <script src="/admin-side/js/Profile.js?v=4"></script>
 </body>
 </html>

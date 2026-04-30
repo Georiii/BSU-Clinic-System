@@ -1,30 +1,23 @@
-/* Inventory.css */
-
 .top-bar {
     display: flex; align-items: flex-end; justify-content: space-between;
     margin-bottom: 20px; width: 100%;
 }
-
 .search-box { position: relative; }
 .search-icon {
     position: absolute; right: 15px; color: #999;
 }
-
 .top-input {
     padding: 10px 15px; border: 1px solid #ddd; border-radius: 8px;
     font-size: 14px; font-weight: bold; color: #555; background: white; outline: none;
 }
-
 .add-medicine-panel {
     background: #f4f6f9; border: 1px solid #e2e8f0; border-radius: 10px;
     padding: 15px 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 .add-medicine-panel h4 { margin: 0 0 12px 0; font-size: 15px; color: #111; }
-
 .add-grid {
     display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;
 }
-
 .input-group { display: flex; flex-direction: column; }
 .input-group label { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 5px; }
 .inv-input { 
@@ -32,10 +25,8 @@
     outline: none; font-size: 13px; font-weight: 600; font-family: inherit;
 }
 .inv-input:focus { border-color: #50C878; box-shadow: 0 0 0 2px rgba(80,200,120,0.2); }
-
 .inv-table th { padding: 12px; background: #f8f9fa; border-bottom: 2px solid #ddd; }
 .inv-table td { padding: 14px 12px; vertical-align: middle; }
-
 /* Status Badges */
 .status-badge {
     padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; display: inline-block;
@@ -43,12 +34,10 @@
 .status-good { background: #4ade80; color: white; }
 .status-low { background: #fef08a; color: #854d0e; }
 .status-expired { background: #ef4444; color: white; }
-
 .action-icon {
     width: 22px; height: auto; cursor: pointer; opacity: 0.7; transition: 0.2s;
 }
 .action-icon:hover { opacity: 1; transform: scale(1.1); }
-
 /* Bottom Summary Tabs */
 .summary-container {
     display: flex; gap: 15px; margin-top: 20px;
@@ -60,7 +49,6 @@
 .sum-total { background: #f8f9fa; border-color: #d1d5db; }
 .sum-low { background: #fef08a; border-color: #fde047; }
 .sum-expired { background: #ef4444; border-color: #dc2626; }
-
 /* Modal */
 .modal {
     display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -72,5 +60,91 @@
 }
 .modal-header { display: flex; justify-content: space-between; align-items: center; }
 .modal-header h2 { margin: 0; font-size: 18px; }
-.close { font-size: 24px; cursor: pointer; color: #999; line-height: 1; }
+.close { font-size: 30px; cursor: pointer; color: #999; line-height: 1; }
 .close:hover { color: #333; }
+.btn-white{
+    background-color: #4b5563; color: white; border: none; padding: 8px 16px;
+    border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: background 0.2s;
+}
+.btn-white:hover {
+    background-color: #374151;
+}
+
+/* ── NEW: Select All & Delete Selected ── */
+.select-all-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+    cursor: pointer;
+    user-select: none;
+}
+
+.select-all-label input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: #50C878;
+    cursor: pointer;
+}
+
+.row-checkbox {
+    width: 15px;
+    height: 15px;
+    accent-color: #50C878;
+    cursor: pointer;
+}
+
+.btn-delete {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-delete:hover {
+    background-color: #dc2626;
+}
+
+tr.selected-row {
+    background-color: #fef2f2 !important;
+}
+/* ── IMPROVED SIDEBAR TOGGLE & TILT ANIMATION ── */
+.sidebar {
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-menu li {
+    transition: transform 0.4s ease, opacity 0.3s ease;
+    transform-origin: left center;
+}
+
+/* The "Tilting" animation when hiding */
+.sidebar-menu li.tilt-out {
+    transform: rotateX(90deg) translateX(-20px);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.sidebar.collapsed {
+    width: 60px; /* Slimmer when hidden */
+    min-width: 60px;
+}
+
+/* Hide everything inside the sidebar when collapsed */
+.sidebar.collapsed .sidebar-menu,
+.sidebar.collapsed .logout-btn,
+.sidebar.collapsed .sidebar-header::after {
+    display: none;
+}
+
+/* Adjust main content transition for smoothness */
+.main-content {
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}

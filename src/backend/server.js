@@ -541,13 +541,44 @@ app.get('/api/clients/:type', (req, res) => {
             } else {
                 const isCert = row.purpose_med_cert || row.purpose_pre_enrolment || (row.purpose && row.purpose.includes('Certificate'));
                 if (isCert && row.cert_status) {
-                    status = row.cert_status; 
+                    status = row.cert_status;
                 }
             }
             return { ...row, dynamic_status: status };
         });
 
-        res.json(processedData);
+        // FIXED: Fetch symptoms and medicines for each visit and attach them
+        const visitIds = processedData.map(r => r.visit_id);
+        if (visitIds.length === 0) return res.json([]);
+
+        const userType = type === 'student' ? 'student' : type === 'employee' ? 'employee' : 'visitor';
+
+        db.query(
+            "SELECT * FROM recorded_symptoms WHERE visit_id IN (?) AND user_type = ?",
+            [visitIds, userType],
+            (err, sympResults) => {
+                if (err) sympResults = [];
+
+                db.query(
+                    "SELECT * FROM dispensed_medicines WHERE visit_id IN (?) AND user_type = ?",
+                    [visitIds, userType],
+                    (err, medResults) => {
+                        if (err) medResults = [];
+
+                        const finalData = processedData.map(row => {
+                            const symptoms = (sympResults || [])
+                                .filter(s => s.visit_id === row.visit_id)
+                                .map(s => s.symptom_name);
+                            const medicines = (medResults || [])
+                                .filter(m => m.visit_id === row.visit_id);
+                            return { ...row, symptoms, medicines };
+                        });
+
+                        res.json(finalData);
+                    }
+                );
+            }
+        );
     });
 });
 
@@ -860,6 +891,17 @@ app.get('/api/export-inventory', async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename="Inventory_Records.xlsx"`);
         await workbook.xlsx.write(res);
         res.end();
+    });
+});
+
+// NEW: Delete multiple medicines by ID
+app.delete('/api/inventory/delete-multiple', (req, res) => {
+    const { ids } = req.body;
+    if (!ids || ids.length === 0) return res.status(400).json({ message: "No IDs provided" });
+
+    db.query("DELETE FROM master_medicines WHERE med_id IN (?)", [ids], (err) => {
+        if (err) return res.status(500).json(err);
+        res.json({ message: "Medicines deleted successfully" });
     });
 });
 

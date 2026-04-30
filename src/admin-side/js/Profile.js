@@ -263,3 +263,28 @@ window.handleLogoutClick = async function() {
     
     window.location.href = '/admin/login';
 };
+
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    const menuItems = document.querySelectorAll('.sidebar-menu li');
+    
+    sidebar.classList.toggle('collapsed');
+    
+    // Add/Remove tilt animation class to each menu item
+    menuItems.forEach((item, index) => {
+        if (sidebar.classList.contains('collapsed')) {
+            item.style.transitionDelay = `${index * 0.05}s`;
+            item.classList.add('tilt-out');
+        } else {
+            item.style.transitionDelay = `${index * 0.05}s`;
+            item.classList.remove('tilt-out');
+        }
+    });
+
+    if(sidebar.classList.contains('collapsed')) {
+        mainContent.style.width = "calc(100vw - 80px)";
+    } else {
+        mainContent.style.width = "calc(100vw - 260px)";
+    }
+}

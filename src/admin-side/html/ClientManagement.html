@@ -9,7 +9,7 @@
 <body>
     <div class="sidebar">
         <div>
-            <div class="sidebar-header">☰</div>
+            <div class="sidebar-header" onclick="toggleSidebar()" style="cursor:pointer; user-select:none;">☰</div>
             <ul class="sidebar-menu">
                 <li onclick="window.location.href='/admin/profile'">PROFILE</li>
                 <li class="active">CLIENT MANAGEMENT</li>
@@ -75,7 +75,41 @@
                 <p><strong>Purpose of visit:</strong> <span id="vPurpose"></span></p>
                 <p><strong>Marked as confined?</strong> <span id="vConfined"></span></p>
                 <p><strong>Status:</strong> <span id="vStatus"></span></p>
-                <div class="modal-sig-box">
+
+                <!-- TIMEOUT RESULTS SECTION -->
+                <div id="vTimeoutResults" style="margin-top:15px; border-top: 2px solid #e5e7eb; padding-top:15px;">
+                    <p style="font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.6px; color:#50C878; margin:0 0 10px 0;">Clinic Visit Results</p>
+
+                    <p id="vBPRow" style="display:none;"><strong>Blood Pressure:</strong> <span id="vBP"></span></p>
+                    <p id="vCertStatusRow" style="display:none;"><strong>Certificate Status:</strong> <span id="vCertStatus"></span></p>
+                    <p id="vCertTypeRow" style="display:none;"><strong>Certificate Type:</strong> <span id="vCertType"></span></p>
+                    <p id="vDentalTypeRow" style="display:none;"><strong>Dental Service:</strong> <span id="vDentalType"></span></p>
+                    <p id="vOthersRow" style="display:none;"><strong>Others (Specified):</strong> <span id="vOthers"></span></p>
+                    <p id="vConsiderationRow" style="display:none;"><strong>Consideration / Notes:</strong> <span id="vConsideration"></span></p>
+                    <p id="vRemarksRow" style="display:none;"><strong>Remarks:</strong> <span id="vRemarks"></span></p>
+
+                    <div id="vSymptomsBlock" style="display:none; margin-top:8px;">
+                        <strong>Symptoms Recorded:</strong>
+                        <div id="vSymptomsList" style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px;"></div>
+                    </div>
+
+                    <div id="vMedicinesBlock" style="display:none; margin-top:10px;">
+                        <strong>Medicines Dispensed:</strong>
+                        <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:13px;">
+                            <thead>
+                                <tr style="background:#f3f4f6;">
+                                    <th style="padding:6px 10px; text-align:left; border-bottom:1px solid #ddd;">Generic Name</th>
+                                    <th style="padding:6px 10px; text-align:left; border-bottom:1px solid #ddd;">Brand</th>
+                                    <th style="padding:6px 10px; text-align:center; border-bottom:1px solid #ddd;">Qty</th>
+                                    <th style="padding:6px 10px; text-align:center; border-bottom:1px solid #ddd;">Pcs</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vMedicinesTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-sig-box" style="margin-top:15px;">
                     <img id="vSignature" src="" alt="Client Signature" style="max-width:100%; max-height:100%; object-fit:contain; display:none;">
                     <span id="vSigPlaceholder" style="color:#aaa; font-size:13px;">No signature on file</span>
                 </div>
@@ -85,7 +119,7 @@
             </div>
         </div>
     </div>
-
+    
     <div id="editModal" class="modal">
         <div class="modal-content edit-modal-content">
             <div class="edit-modal-header">
