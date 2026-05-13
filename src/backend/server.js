@@ -51,6 +51,10 @@ app.get('/admin/inventory', (req, res) => {
      res.sendFile(path.join(__dirname, '..', 'admin-side', 'html', 'Inventory.html')); 
 });
 
+app.get('/admin/reports', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'admin-side', 'html', 'Report.html'));
+});
+
 // --- API ROUTES ---
 
 app.get('/api/generate-visitor-id', (req, res) => {
@@ -853,45 +857,165 @@ app.put('/api/inventory/:id', (req, res) => {
 });
 
 app.get('/api/export-inventory', async (req, res) => {
-    db.query("SELECT * FROM master_medicines ORDER BY generic_name ASC", async (err, results) => {
-        if (err) return res.status(500).json(err);
-        
+    const queryAsync = (sql, p) => new Promise((resolve, reject) => {
+        db.query(sql, p || [], (err, r) => err ? reject(err) : resolve(r));
+    });
+
+    try {
+        const medicines = await queryAsync("SELECT * FROM master_medicines ORDER BY generic_name ASC");
+        const dispensed = await queryAsync(
+            `SELECT dm.medicine_generic, dm.medicine_brand, 
+                    SUM(COALESCE(dm.quantity_box, 0)) as total_qty_dispensed,
+                    SUM(COALESCE(dm.pieces, 0)) as total_pcs_dispensed
+             FROM dispensed_medicines dm
+             GROUP BY dm.medicine_generic, dm.medicine_brand`
+        );
+
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Inventory');
-        
-        worksheet.columns = [
-            { header: 'No.', key: 'index', width: 10 },
-            { header: 'Generic Name', key: 'generic_name', width: 25 },
-            { header: 'Brand Name', key: 'brand_name', width: 25 },
-            { header: 'Quantity (Box)', key: 'quantity', width: 15 },
-            { header: 'Pieces', key: 'pieces', width: 15 },
-            { header: 'Expiration Date', key: 'expiration_date', width: 20 },
-            { header: 'Status', key: 'status', width: 15 }
+
+        // ── Sheet 1: Current Inventory ─────────────────────────
+        const ws1 = workbook.addWorksheet('Current Inventory');
+        ws1.columns = [
+            { header: 'No.',             key: 'index',           width: 8  },
+            { header: 'Generic Name',    key: 'generic_name',    width: 25 },
+            { header: 'Brand Name',      key: 'brand_name',      width: 25 },
+            { header: 'Qty (Box)',        key: 'quantity',        width: 14 },
+            { header: 'Pieces',          key: 'pieces',          width: 12 },
+            { header: 'Expiration Date', key: 'expiration_date', width: 18 },
+            { header: 'Status',          key: 'status',          width: 14 },
         ];
-        
-        worksheet.getRow(1).font = { bold: true };
-        
-        results.forEach((row, index) => {
+        ws1.getRow(1).font = { bold: true };
+
+        medicines.forEach((row, i) => {
             let status = 'Good';
             if (row.expiration_date && new Date(row.expiration_date) < new Date()) status = 'Expired';
             else if (row.quantity <= 2) status = 'Low Stock';
-            
-            worksheet.addRow({
-                index: index + 1,
+            ws1.addRow({
+                index: i + 1,
                 generic_name: row.generic_name,
-                brand_name: row.brand_name,
+                brand_name: row.brand_name || 'N/A',
                 quantity: row.quantity || 0,
                 pieces: row.pieces || 0,
                 expiration_date: row.expiration_date ? new Date(row.expiration_date).toLocaleDateString() : 'N/A',
-                status: status
+                status
             });
         });
-        
+
+        // ── Sheet 2: Original vs Current Stock ─────────────────
+        const ws2 = workbook.addWorksheet('Stock Tracking');
+        ws2.columns = [
+            { header: 'No.',                   key: 'index',            width: 8  },
+            { header: 'Generic Name',          key: 'generic_name',     width: 25 },
+            { header: 'Brand Name',            key: 'brand_name',       width: 25 },
+            { header: 'Current Qty (Box)',      key: 'current_qty',      width: 16 },
+            { header: 'Current Pieces',        key: 'current_pcs',      width: 14 },
+            { header: 'Total Qty Dispensed',   key: 'dispensed_qty',    width: 18 },
+            { header: 'Total Pcs Dispensed',   key: 'dispensed_pcs',    width: 18 },
+            { header: 'Original Qty (Box)',     key: 'original_qty',     width: 16 },
+            { header: 'Original Pieces',       key: 'original_pcs',     width: 14 },
+            { header: 'Expiration Date',       key: 'expiration_date',  width: 18 },
+            { header: 'Status',                key: 'status',           width: 14 },
+        ];
+        ws2.getRow(1).font = { bold: true };
+
+        // Style header row green
+        ws2.getRow(1).eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF50C878' } };
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        });
+
+        medicines.forEach((row, i) => {
+            const dispMatch = dispensed.find(d =>
+                (d.medicine_generic || '').toLowerCase() === (row.generic_name || '').toLowerCase()
+            );
+            const dispensedQty = dispMatch ? parseInt(dispMatch.total_qty_dispensed) || 0 : 0;
+            const dispensedPcs = dispMatch ? parseInt(dispMatch.total_pcs_dispensed) || 0 : 0;
+            const originalQty  = (parseInt(row.quantity) || 0) + dispensedQty;
+            const originalPcs  = (parseInt(row.pieces)   || 0) + dispensedPcs;
+
+            let status = 'Good';
+            if (row.expiration_date && new Date(row.expiration_date) < new Date()) status = 'Expired';
+            else if (row.quantity <= 2) status = 'Low Stock';
+
+            const dataRow = ws2.addRow({
+                index: i + 1,
+                generic_name:    row.generic_name,
+                brand_name:      row.brand_name || 'N/A',
+                current_qty:     row.quantity   || 0,
+                current_pcs:     row.pieces     || 0,
+                dispensed_qty:   dispensedQty,
+                dispensed_pcs:   dispensedPcs,
+                original_qty:    originalQty,
+                original_pcs:    originalPcs,
+                expiration_date: row.expiration_date ? new Date(row.expiration_date).toLocaleDateString() : 'N/A',
+                status
+            });
+
+            // Highlight rows where stock was used
+            if (dispensedQty > 0 || dispensedPcs > 0) {
+                dataRow.getCell('dispensed_qty').font = { color: { argb: 'FFEF4444' }, bold: true };
+                dataRow.getCell('dispensed_pcs').font = { color: { argb: 'FFEF4444' }, bold: true };
+                dataRow.getCell('original_qty').font  = { color: { argb: 'FF1D4ED8' }, bold: true };
+                dataRow.getCell('original_pcs').font  = { color: { argb: 'FF1D4ED8' }, bold: true };
+            }
+        });
+
+        // ── Sheet 3: Dispensing History ────────────────────────
+        const history = await queryAsync(
+            `SELECT dm.*, 
+                    COALESCE(cv.srcode, ecv.employee_id, vl.idNo) as client_id,
+                    COALESCE(s.fullname, e.fullname, vl.fullname) as client_name,
+                    COALESCE(cv.visit_date, ecv.visit_date, vl.visit_date) as visit_date
+             FROM dispensed_medicines dm
+             LEFT JOIN clinic_visits cv ON dm.visit_id = cv.visit_id AND dm.user_type = 'student'
+             LEFT JOIN students s ON cv.srcode = s.srcode
+             LEFT JOIN employee_clinic_visit ecv ON dm.visit_id = ecv.visit_id AND dm.user_type = 'employee'
+             LEFT JOIN employees e ON ecv.employee_id = e.employee_id
+             LEFT JOIN visitor_logs vl ON dm.visit_id = vl.visit_id AND dm.user_type = 'visitor'
+             ORDER BY dm.visit_id DESC`
+        );
+
+        const ws3 = workbook.addWorksheet('Dispensing History');
+        ws3.columns = [
+            { header: 'No.',             key: 'index',            width: 8  },
+            { header: 'Visit Date',      key: 'visit_date',       width: 14 },
+            { header: 'Client Type',     key: 'user_type',        width: 14 },
+            { header: 'Client ID',       key: 'client_id',        width: 16 },
+            { header: 'Client Name',     key: 'client_name',      width: 28 },
+            { header: 'Generic Name',    key: 'medicine_generic', width: 25 },
+            { header: 'Brand Name',      key: 'medicine_brand',   width: 25 },
+            { header: 'Qty Dispensed',   key: 'quantity_box',     width: 14 },
+            { header: 'Pcs Dispensed',   key: 'pieces',           width: 14 },
+        ];
+        ws3.getRow(1).font = { bold: true };
+        ws3.getRow(1).eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFCC00' } };
+            cell.font = { bold: true, color: { argb: 'FF111111' } };
+        });
+
+        (history || []).forEach((row, i) => {
+            ws3.addRow({
+                index: i + 1,
+                visit_date:       row.visit_date ? new Date(row.visit_date).toLocaleDateString() : 'N/A',
+                user_type:        row.user_type,
+                client_id:        row.client_id   || 'N/A',
+                client_name:      row.client_name || 'N/A',
+                medicine_generic: row.medicine_generic,
+                medicine_brand:   row.medicine_brand || 'N/A',
+                quantity_box:     row.quantity_box || 0,
+                pieces:           row.pieces       || 0,
+            });
+        });
+
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename="Inventory_Records.xlsx"`);
+        res.setHeader('Content-Disposition', `attachment; filename="BSU_Inventory_Records.xlsx"`);
         await workbook.xlsx.write(res);
         res.end();
-    });
+
+    } catch (err) {
+        console.error("Inventory export error:", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // NEW: Delete multiple medicines by ID
@@ -903,6 +1027,206 @@ app.delete('/api/inventory/delete-multiple', (req, res) => {
         if (err) return res.status(500).json(err);
         res.json({ message: "Medicines deleted successfully" });
     });
+});
+
+// REPORT EXPORT — full client details + symptoms + medicines
+app.get('/api/export-report', async (req, res) => {
+    const { from, to } = req.query;
+
+    let dateFilter = '';
+    const params = [];
+    if (from && from !== 'all') { dateFilter += ' AND visit_date >= ?'; params.push(from); }
+    if (to   && to   !== 'all') { dateFilter += ' AND visit_date <= ?'; params.push(to);   }
+
+    const queryAsync = (sql, p) => new Promise((resolve, reject) => {
+        db.query(sql, p, (err, r) => err ? reject(err) : resolve(r));
+    });
+
+    try {
+        const workbook = new ExcelJS.Workbook();
+
+        // ── Sheet 1: Students ──────────────────────────────────
+        const sRows = await queryAsync(
+            `SELECT v.*, s.fullname as name, s.department, s.program 
+             FROM clinic_visits v JOIN students s ON v.srcode = s.srcode 
+             WHERE 1=1 ${dateFilter} ORDER BY v.visit_date DESC, v.time_in DESC`,
+            params
+        );
+
+        const sIds = sRows.map(r => r.visit_id);
+        let sSymps = [], sMeds = [];
+        if (sIds.length > 0) {
+            sSymps = await queryAsync("SELECT * FROM recorded_symptoms WHERE visit_id IN (?) AND user_type='student'", [sIds]);
+            sMeds  = await queryAsync("SELECT * FROM dispensed_medicines WHERE visit_id IN (?) AND user_type='student'", [sIds]);
+        }
+
+        const ws1 = workbook.addWorksheet('Students');
+        ws1.columns = [
+            { header: 'Visit Date',          key: 'visit_date',            width: 14 },
+            { header: 'SR Code',             key: 'srcode',                width: 14 },
+            { header: 'Name',                key: 'name',                  width: 28 },
+            { header: 'Department',          key: 'department',            width: 16 },
+            { header: 'Program',             key: 'program',               width: 22 },
+            { header: 'Age',                 key: 'age',                   width: 8  },
+            { header: 'Gender',              key: 'gender',                width: 14 },
+            { header: 'Special Needs',       key: 'special_needs',         width: 14 },
+            { header: 'Disability Type',     key: 'pwd_type',              width: 22 },
+            { header: 'Time In',             key: 'time_in',               width: 12 },
+            { header: 'Time Out',            key: 'time_out',              width: 12 },
+            { header: 'Blood Pressure',      key: 'blood_pressure',        width: 14 },
+            { header: 'Medical Consult',     key: 'purpose_medical_consult', width: 16 },
+            { header: 'Dental',              key: 'purpose_dental',        width: 10 },
+            { header: 'Dental Service',      key: 'dental_service_type',   width: 22 },
+            { header: 'Blood Pressure Visit',key: 'purpose_blood_pressure', width: 18 },
+            { header: 'Med Certificate',     key: 'purpose_med_cert',      width: 16 },
+            { header: 'Cert Type',           key: 'cert_type',             width: 22 },
+            { header: 'Pre-enrolment',       key: 'purpose_pre_enrolment', width: 14 },
+            { header: 'Others',              key: 'purpose_others',        width: 20 },
+            { header: 'Certificate Status',  key: 'cert_status',           width: 18 },
+            { header: 'Is Confined',         key: 'is_confined',           width: 12 },
+            { header: 'Consideration',       key: 'consideration',         width: 25 },
+            { header: 'Remarks',             key: 'remarks',               width: 30 },
+            { header: 'Symptoms',            key: 'symptoms',              width: 40 },
+            { header: 'Medicines Dispensed', key: 'medicines',             width: 50 },
+        ];
+        ws1.getRow(1).font = { bold: true };
+
+        sRows.forEach(r => {
+            const symptoms = sSymps.filter(s => s.visit_id === r.visit_id).map(s => s.symptom_name).join(', ');
+            const medicines = sMeds.filter(m => m.visit_id === r.visit_id)
+                .map(m => `${m.medicine_generic}${m.medicine_brand ? ' ('+m.medicine_brand+')' : ''} - Qty:${m.quantity_box||0} Pcs:${m.pieces||0}`)
+                .join('; ');
+            ws1.addRow({
+                ...r,
+                visit_date: r.visit_date ? new Date(r.visit_date).toLocaleDateString() : 'N/A',
+                purpose_medical_consult: r.purpose_medical_consult ? 'Yes' : 'No',
+                purpose_dental:          r.purpose_dental          ? 'Yes' : 'No',
+                purpose_blood_pressure:  r.purpose_blood_pressure  ? 'Yes' : 'No',
+                purpose_med_cert:        r.purpose_med_cert        ? 'Yes' : 'No',
+                purpose_pre_enrolment:   r.purpose_pre_enrolment   ? 'Yes' : 'No',
+                symptoms,
+                medicines
+            });
+        });
+
+        // ── Sheet 2: Employees ─────────────────────────────────
+        const eRows = await queryAsync(
+            `SELECT v.*, e.fullname as name, e.department, e.position, e.employment_type, e.employment_status
+             FROM employee_clinic_visit v JOIN employees e ON v.employee_id = e.employee_id
+             WHERE 1=1 ${dateFilter} ORDER BY v.visit_date DESC, v.time_in DESC`,
+            params
+        );
+
+        const eIds = eRows.map(r => r.visit_id);
+        let eSymps = [], eMeds = [];
+        if (eIds.length > 0) {
+            eSymps = await queryAsync("SELECT * FROM recorded_symptoms WHERE visit_id IN (?) AND user_type='employee'", [eIds]);
+            eMeds  = await queryAsync("SELECT * FROM dispensed_medicines WHERE visit_id IN (?) AND user_type='employee'", [eIds]);
+        }
+
+        const ws2 = workbook.addWorksheet('Employees');
+        ws2.columns = [
+            { header: 'Visit Date',          key: 'visit_date',       width: 14 },
+            { header: 'Employee ID',         key: 'employee_id',      width: 14 },
+            { header: 'Name',                key: 'name',             width: 28 },
+            { header: 'Department',          key: 'department',       width: 16 },
+            { header: 'Position',            key: 'position',         width: 22 },
+            { header: 'Employment Type',     key: 'employment_type',  width: 16 },
+            { header: 'Employment Status',   key: 'employment_status',width: 18 },
+            { header: 'Age',                 key: 'age',              width: 8  },
+            { header: 'Gender',              key: 'gender',           width: 14 },
+            { header: 'Special Needs',       key: 'special_needs',    width: 14 },
+            { header: 'Disability Type',     key: 'pwd_type',         width: 22 },
+            { header: 'Time In',             key: 'time_in',          width: 12 },
+            { header: 'Time Out',            key: 'time_out',         width: 12 },
+            { header: 'Blood Pressure',      key: 'blood_pressure',   width: 14 },
+            { header: 'Purpose of Visit',    key: 'purpose_of_visit', width: 30 },
+            { header: 'Dental Service',      key: 'dental_service_type', width: 22 },
+            { header: 'Certificate Type',    key: 'certificate_type', width: 22 },
+            { header: 'Others Specify',      key: 'others_specify',   width: 22 },
+            { header: 'Certificate Status',  key: 'cert_status',      width: 18 },
+            { header: 'Is Confined',         key: 'is_confined',      width: 12 },
+            { header: 'Consideration',       key: 'consideration',    width: 25 },
+            { header: 'Remarks',             key: 'remarks',          width: 30 },
+            { header: 'Symptoms',            key: 'symptoms',         width: 40 },
+            { header: 'Medicines Dispensed', key: 'medicines',        width: 50 },
+        ];
+        ws2.getRow(1).font = { bold: true };
+
+        eRows.forEach(r => {
+            const symptoms = eSymps.filter(s => s.visit_id === r.visit_id).map(s => s.symptom_name).join(', ');
+            const medicines = eMeds.filter(m => m.visit_id === r.visit_id)
+                .map(m => `${m.medicine_generic}${m.medicine_brand ? ' ('+m.medicine_brand+')' : ''} - Qty:${m.quantity_box||0} Pcs:${m.pieces||0}`)
+                .join('; ');
+            ws2.addRow({
+                ...r,
+                visit_date: r.visit_date ? new Date(r.visit_date).toLocaleDateString() : 'N/A',
+                symptoms,
+                medicines
+            });
+        });
+
+        // ── Sheet 3: Visitors ──────────────────────────────────
+        const vRows = await queryAsync(
+            `SELECT * FROM visitor_logs WHERE 1=1 ${dateFilter} ORDER BY visit_date DESC, time_in DESC`,
+            params
+        );
+
+        const vIds = vRows.map(r => r.visit_id);
+        let vSymps = [], vMeds = [];
+        if (vIds.length > 0) {
+            vSymps = await queryAsync("SELECT * FROM recorded_symptoms WHERE visit_id IN (?) AND user_type='visitor'", [vIds]);
+            vMeds  = await queryAsync("SELECT * FROM dispensed_medicines WHERE visit_id IN (?) AND user_type='visitor'", [vIds]);
+        }
+
+        const ws3 = workbook.addWorksheet('Visitors');
+        ws3.columns = [
+            { header: 'Visit Date',          key: 'visit_date',    width: 14 },
+            { header: 'ID No.',              key: 'idNo',          width: 12 },
+            { header: 'Name',                key: 'fullname',      width: 28 },
+            { header: 'Birthday',            key: 'birthday',      width: 14 },
+            { header: 'Age',                 key: 'age',           width: 8  },
+            { header: 'Gender',              key: 'gender',        width: 14 },
+            { header: 'Special Needs',       key: 'special_needs', width: 14 },
+            { header: 'Disability Type',     key: 'pwd_type',      width: 22 },
+            { header: 'Purpose',             key: 'purpose',       width: 25 },
+            { header: 'Certificate Type',    key: 'certificate_type', width: 22 },
+            { header: 'Others Specify',      key: 'others_specify',width: 22 },
+            { header: 'Time In',             key: 'time_in',       width: 12 },
+            { header: 'Time Out',            key: 'time_out',      width: 12 },
+            { header: 'Blood Pressure',      key: 'blood_pressure',width: 14 },
+            { header: 'Certificate Status',  key: 'cert_status',   width: 18 },
+            { header: 'Is Confined',         key: 'is_confined',   width: 12 },
+            { header: 'Consideration',       key: 'consideration', width: 25 },
+            { header: 'Remarks',             key: 'remarks',       width: 30 },
+            { header: 'Symptoms',            key: 'symptoms',      width: 40 },
+            { header: 'Medicines Dispensed', key: 'medicines',     width: 50 },
+        ];
+        ws3.getRow(1).font = { bold: true };
+
+        vRows.forEach(r => {
+            const symptoms = vSymps.filter(s => s.visit_id === r.visit_id).map(s => s.symptom_name).join(', ');
+            const medicines = vMeds.filter(m => m.visit_id === r.visit_id)
+                .map(m => `${m.medicine_generic}${m.medicine_brand ? ' ('+m.medicine_brand+')' : ''} - Qty:${m.quantity_box||0} Pcs:${m.pieces||0}`)
+                .join('; ');
+            ws3.addRow({
+                ...r,
+                visit_date: r.visit_date ? new Date(r.visit_date).toLocaleDateString() : 'N/A',
+                symptoms,
+                medicines
+            });
+        });
+
+        const filename = `BSU_Report_${from || 'all'}_to_${to || 'all'}.xlsx`;
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (err) {
+        console.error("Report export error:", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // --- SERVER START & AUTO-OPEN ---

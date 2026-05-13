@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reports</title>
+    <link rel="stylesheet" href="/admin-side/css/DashboardShared.css">
+    <link rel="stylesheet" href="/admin-side/css/Report.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div>
+            <div class="sidebar-header" onclick="toggleSidebar()" style="cursor:pointer; user-select:none;">☰</div>
+            <ul class="sidebar-menu">
+                <li onclick="window.location.href='/admin/profile'">PROFILE</li>
+                <li onclick="window.location.href='/admin/clients'">CLIENT MANAGEMENT</li>
+                <li onclick="window.location.href='/admin/inventory'">INVENTORY</li>
+                <li class="active">REPORTS</li>
+            </ul>
+        </div>
+        <button class="logout-btn" onclick="window.location.href='/admin/login'">Log out</button>
+    </div>
+
+    <div class="main-content">
+        <div class="report-top-bar">
+            <h1 class="page-title" style="margin:0;">REPORTS</h1>
+            <div class="report-actions">
+                <button class="icon-btn" onclick="openModal('filterModal')" title="Filter">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                </button>
+                <button class="icon-btn" onclick="downloadReport()" title="Download Report">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Date Range Picker -->
+        <div class="date-range-bar">
+            <span class="date-label">Report Period:</span>
+            <div class="date-range-container">
+                <input type="date" id="reportFrom" class="report-date-input" onchange="loadReports()">
+                <span class="date-sep">→</span>
+                <input type="date" id="reportTo" class="report-date-input" onchange="loadReports()">
+            </div>
+            <button class="btn-clear-date" onclick="clearDates()">Clear</button>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card card-active">
+                <div class="card-icon">🏥</div>
+                <div class="card-info">
+                    <div class="card-number" id="activeCount">0</div>
+                    <div class="card-label">Active In-Clinic</div>
+                    <div class="card-sub">Clients not yet timed out today</div>
+                </div>
+            </div>
+            <div class="summary-card card-success">
+                <div class="card-icon">✅</div>
+                <div class="card-info">
+                    <div class="card-number" id="successCount">0</div>
+                    <div class="card-label">Successful Transactions</div>
+                    <div class="card-sub">Clients timed out in period</div>
+                </div>
+            </div>
+            <div class="summary-card card-total">
+                <div class="card-icon">📋</div>
+                <div class="card-info">
+                    <div class="card-number" id="totalCount">0</div>
+                    <div class="card-label">Total Visits</div>
+                    <div class="card-sub">All visits in period</div>
+                </div>
+            </div>
+            <div class="summary-card card-confined">
+                <div class="card-icon">🛏</div>
+                <div class="card-info">
+                    <div class="card-number" id="confinedCount">0</div>
+                    <div class="card-label">Confined Cases</div>
+                    <div class="card-sub">Visits over 40 minutes</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+            <div class="chart-card">
+                <h3 class="chart-title">Gender Distribution</h3>
+                <div class="chart-wrap">
+                    <canvas id="genderChart"></canvas>
+                </div>
+                <div class="chart-legend" id="genderLegend"></div>
+            </div>
+            <div class="chart-card">
+                <h3 class="chart-title">Client Type</h3>
+                <div class="chart-wrap">
+                    <canvas id="clientChart"></canvas>
+                </div>
+                <div class="chart-legend" id="clientLegend"></div>
+            </div>
+            <div class="chart-card">
+                <h3 class="chart-title">Purpose of Visit</h3>
+                <div class="chart-wrap">
+                    <canvas id="purposeChart"></canvas>
+                </div>
+                <div class="chart-legend" id="purposeLegend"></div>
+            </div>
+            <div class="chart-card">
+                <h3 class="chart-title">Medicines Dispensed</h3>
+                <div class="chart-wrap">
+                    <canvas id="medicineChart"></canvas>
+                </div>
+                <div class="chart-legend" id="medicineLegend"></div>
+            </div>
+        </div>
+
+        <!-- Text Summary -->
+        <div class="text-summary-card">
+            <h3 class="chart-title">Report Summary</h3>
+            <div id="textSummary" class="text-summary-content">
+                <p style="color:#aaa;">Loading summary...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Modal -->
+    <div id="filterModal" class="modal">
+        <div class="modal-content" style="max-width:620px; max-height:90vh; overflow-y:auto;">
+            <div class="modal-header">
+                <h2>Filter by</h2>
+                <span class="close" onclick="closeModal('filterModal')">&times;</span>
+            </div>
+            <div class="filter-grid">
+                <div>
+                    <h4>Gender</h4>
+                    <label><input type="checkbox" class="f-gender" value="Male"> Male</label>
+                    <label><input type="checkbox" class="f-gender" value="Female"> Female</label>
+                    <label><input type="checkbox" class="f-gender" value="Prefer not to say"> Prefer not to say</label>
+                    <label><input type="checkbox" class="f-gender" value="Others"> Others</label>
+                </div>
+                <div>
+                    <h4>Name</h4>
+                    <label><input type="radio" name="fsort" value="asc"> Ascended A-Z</label>
+                    <label><input type="radio" name="fsort" value="desc"> Descended Z-A</label>
+                </div>
+                <div>
+                    <h4>Purpose of Visit</h4>
+                    <label><input type="checkbox" class="f-purpose" value="Medical Consult/Medicine"> Medical Consult/Medicine</label>
+                    <label><input type="checkbox" class="f-purpose" value="Dental"> Dental</label>
+                    <label><input type="checkbox" class="f-purpose" value="Medical Certificate"> Medical Certificate</label>
+                    <label><input type="checkbox" class="f-purpose" value="Blood Pressure"> Blood Pressure</label>
+                    <label><input type="checkbox" class="f-purpose" value="Others"> Others</label>
+                </div>
+                <div>
+                    <h4>Status</h4>
+                    <label><input type="checkbox" class="f-status" value="Completed"> Completed</label>
+                    <label><input type="checkbox" class="f-status" value="On-Hold"> On-Hold</label>
+                    <label><input type="checkbox" class="f-status" value="In-Clinic"> In-Clinic</label>
+                    <h4 style="margin-top:15px;">Special Needs</h4>
+                    <label><input type="checkbox" class="f-special" value="None"> None</label>
+                    <label><input type="checkbox" class="f-special" value="PWD"> PWD</label>
+                    <label><input type="checkbox" class="f-special" value="Others"> Others</label>
+                </div>
+                <div>
+                    <h4>Employment Type</h4>
+                    <label><input type="checkbox" class="f-emptype" value="Non-Teaching"> Non-Teaching</label>
+                    <label><input type="checkbox" class="f-emptype" value="Teaching"> Teaching</label>
+                </div>
+                <div>
+                    <h4>Employment Status</h4>
+                    <label><input type="checkbox" class="f-empstatus" value="Casual"> Casual</label>
+                    <label><input type="checkbox" class="f-empstatus" value="Temporary"> Temporary</label>
+                    <label><input type="checkbox" class="f-empstatus" value="Permanent"> Permanent</label>
+                    <label><input type="checkbox" class="f-empstatus" value="Contractual"> Contractual</label>
+                    <label><input type="checkbox" class="f-empstatus" value="Job Order"> Job Order</label>
+                    <label><input type="checkbox" class="f-empstatus" value="COS"> COS</label>
+                </div>
+                <div>
+                    <h4>Department</h4>
+                    <label><input type="checkbox" class="f-dept" value="CICS"> CICS</label>
+                    <label><input type="checkbox" class="f-dept" value="CAS/CCJE"> CAS/CCJE</label>
+                    <label><input type="checkbox" class="f-dept" value="CABEIHM"> CABEIHM</label>
+                    <label><input type="checkbox" class="f-dept" value="CET"> CET</label>
+                    <label><input type="checkbox" class="f-dept" value="CTE"> CTE</label>
+                </div>
+                <div>
+                    <h4>Medicine Dispensed</h4>
+                    <label><input type="checkbox" id="f-medicine"> Has Medicine Dispensed</label>
+                </div>
+            </div>
+            <div style="text-align:center; margin-top:25px; display:flex; justify-content:center; gap:15px;">
+                <button class="btn-white" onclick="clearFilters()">Cancel</button>
+                <button class="btn-yellow" onclick="applyFilters()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/admin-side/js/Report.js"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            sidebar.classList.toggle('collapsed');
+            if (sidebar.classList.contains('collapsed')) {
+                mainContent.style.width = "calc(100vw - 80px)";
+            } else {
+                mainContent.style.width = "calc(100vw - 260px)";
+            }
+        }
+    </script>
+</body>
+</html>
