@@ -254,9 +254,11 @@ function toggleSidebar() {
         }
     });
 
-    if(sidebar.classList.contains('collapsed')) {
-        mainContent.style.width = "calc(100vw - 80px)";
+    if (sidebar.classList.contains('collapsed')) {
+        mainContent.style.width = 'calc(100vw - 80px)';
+        mainContent.style.maxWidth = 'calc(100vw - 80px)';
     } else {
-        mainContent.style.width = "calc(100vw - 260px)";
+        mainContent.style.width = 'calc(100vw - 260px)';
+        mainContent.style.maxWidth = 'calc(100vw - 260px)';
     }
 }

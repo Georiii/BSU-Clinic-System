@@ -2,10 +2,11 @@ let currentAdminProfile = {};
 let isLoggingOut = false;
 let timeoutInterval;
 let needsTimeout = false; 
+const activeAdminUsername = sessionStorage.getItem('loggedInAdminUsername') || 'Mark_G';
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const res = await fetch('/api/admin/profile?username=Mark_G'); 
+        const res = await fetch(`/api/admin/profile?username=${encodeURIComponent(activeAdminUsername)}`); 
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         
         const data = await res.json();
@@ -61,14 +62,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await fetch('/api/admin/signature', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: currentAdminProfile.username || 'Mark_G', signature: sigData })
+                    body: JSON.stringify({ username: currentAdminProfile.username || activeAdminUsername, signature: sigData })
                 });
 
                 if (isLoggingOut) {
                     const logoutRes = await fetch('/api/admin-logout', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: currentAdminProfile.username || 'Mark_G' })
+                        body: JSON.stringify({ username: currentAdminProfile.username || activeAdminUsername })
                     });
 
                     if(logoutRes.ok) {
@@ -121,7 +122,7 @@ document.getElementById('avatarUpload').addEventListener('change', function(e) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    username: currentAdminProfile.username || 'Mark_G', 
+                    username: currentAdminProfile.username || activeAdminUsername, 
                     avatar: base64String 
                 })
             });
@@ -165,7 +166,7 @@ async function submitPasswordChange() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                username: currentAdminProfile.username || 'Mark_G', 
+                username: currentAdminProfile.username || activeAdminUsername, 
                 currentPassword: currPass,
                 newPassword: newPass
             })
@@ -257,10 +258,10 @@ window.handleLogoutClick = async function() {
         await fetch('/api/admin-logout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentAdminProfile.username || 'Mark_G' })
+            body: JSON.stringify({ username: currentAdminProfile.username || activeAdminUsername })
         });
     } catch(e) { console.error(e); }
-    
+    sessionStorage.removeItem('loggedInAdminUsername');
     window.location.href = '/admin/login';
 };
 
@@ -282,9 +283,54 @@ function toggleSidebar() {
         }
     });
 
-    if(sidebar.classList.contains('collapsed')) {
-        mainContent.style.width = "calc(100vw - 80px)";
+    if (sidebar.classList.contains('collapsed')) {
+        mainContent.style.width = 'calc(100vw - 80px)';
+        mainContent.style.maxWidth = 'calc(100vw - 80px)';
     } else {
-        mainContent.style.width = "calc(100vw - 260px)";
+        mainContent.style.width = 'calc(100vw - 260px)';
+        mainContent.style.maxWidth = 'calc(100vw - 260px)';
+    }
+}
+
+// --- DATABASE BACKUP ---
+async function downloadBackup() {
+    const btn = document.getElementById('backupBtn');
+    const originalHTML = btn.innerHTML;
+
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Generating...`;
+    btn.disabled = true;
+    btn.style.background = '#6b7280';
+
+    try {
+        const res = await fetch('/api/admin/backup-database');
+
+        if (!res.ok) {
+            const err = await res.json();
+            alert('Backup failed: ' + (err.error || 'Unknown error'));
+            return;
+        }
+
+        // Extract filename from header
+        const disposition = res.headers.get('Content-Disposition') || '';
+        const nameMatch = disposition.match(/filename="(.+?)"/);
+        const filename = nameMatch ? nameMatch[1] : 'BSU_Clinic_Backup.sql';
+
+        // Trigger download
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+    } catch (err) {
+        alert('Connection error during backup: ' + err.message);
+    } finally {
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+        btn.style.background = '#1d4ed8';
     }
 }

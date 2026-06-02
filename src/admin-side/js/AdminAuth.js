@@ -17,6 +17,14 @@ if (loginForm) {
         const username = document.getElementById('loginUsername').value;
         const password = document.getElementById('loginPassword').value;
 
+        // Default Master Admin Login
+        if (username === 'hsd.jplpc' && password === 'clinic8102') {
+            sessionStorage.setItem('loggedInAdminUsername', username);
+            alert("Default Master Admin Login Successful! Redirecting to Dashboard...");
+            window.location.href = '/admin/profile'; 
+            return; // Exit function so it bypasses database query entirely
+        }
+
         try {
             const res = await fetch('/api/admin-login', {
                 method: 'POST',
@@ -25,6 +33,7 @@ if (loginForm) {
             });
 
             if (res.ok) {
+                sessionStorage.setItem('loggedInAdminUsername', username);
                 alert("Login Successful! Redirecting to Dashboard...");
                 window.location.href = '/admin/profile'; 
             } else {
@@ -57,7 +66,14 @@ if (registerForm) {
             return;
         }
 
-        // 2. STRONG PASSWORD CHECKER
+        // 2. Email format check
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            alert("Please enter a valid personal email address.");
+            return;
+        }
+
+        // 3. STRONG PASSWORD CHECKER
         const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
         if (!strongPasswordRegex.test(password)) {
             alert("Weak Password! It must be at least 8 characters long, contain an uppercase letter, a lowercase letter, and a number.");
@@ -107,10 +123,16 @@ if (sendCodeForm) {
             });
 
             if (res.ok) {
+                const data = await res.json();
+                const hint = document.getElementById('step2Hint');
+                if (hint && data.maskedEmail) {
+                    hint.textContent = `Enter the 6-digit code sent to ${data.maskedEmail}.`;
+                }
                 document.getElementById('step1').style.display = 'none';
                 document.getElementById('step2').style.display = 'block';
             } else {
-                alert("Username not found in the system.");
+                const data = await res.json().catch(() => ({}));
+                alert(data.message || "Username not found in the system.");
             }
         } catch (error) {
             console.error(error);

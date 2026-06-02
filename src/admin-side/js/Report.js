@@ -38,10 +38,19 @@ async function loadReports() {
             ...visitors.map(r  => ({ ...r, clientType: 'Visitor'  }))
         ];
 
-        // Date filter
+        // Date filter — extract date portion using LOCAL time to avoid UTC shift
         allReportData = tagged.filter(r => {
             if (!r.visit_date) return false;
-            const d = new Date(r.visit_date).toISOString().split('T')[0];
+            
+            // Convert to a proper Date object first
+            const dateObj = new Date(r.visit_date);
+            
+            // Format using LOCAL time (not UTC) to avoid timezone rollback
+            const year  = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day   = String(dateObj.getDate()).padStart(2, '0');
+            const d     = `${year}-${month}-${day}`;
+            
             if (from && d < from) return false;
             if (to   && d > to)   return false;
             return true;
@@ -322,3 +331,28 @@ async function downloadReport() {
 function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 window.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; }
+
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    const menuItems = document.querySelectorAll('.sidebar-menu li');
+
+    sidebar.classList.toggle('collapsed');
+
+    menuItems.forEach((item, index) => {
+        item.style.transitionDelay = `${index * 0.05}s`;
+        if (sidebar.classList.contains('collapsed')) {
+            item.classList.add('tilt-out');
+        } else {
+            item.classList.remove('tilt-out');
+        }
+    });
+
+    if (sidebar.classList.contains('collapsed')) {
+        mainContent.style.width = 'calc(100vw - 80px)';
+        mainContent.style.maxWidth = 'calc(100vw - 80px)';
+    } else {
+        mainContent.style.width = 'calc(100vw - 260px)';
+        mainContent.style.maxWidth = 'calc(100vw - 260px)';
+    }
+}

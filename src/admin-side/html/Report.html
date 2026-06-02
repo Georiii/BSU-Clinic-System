@@ -10,7 +10,7 @@
 <body>
     <div class="sidebar">
         <div>
-            <div class="sidebar-header" onclick="toggleSidebar()" style="cursor:pointer; user-select:none;">☰</div>
+            <button type="button" class="sidebar-header" onclick="toggleSidebar()" aria-label="Toggle sidebar">☰</button>
             <ul class="sidebar-menu">
                 <li onclick="window.location.href='/admin/profile'">PROFILE</li>
                 <li onclick="window.location.href='/admin/clients'">CLIENT MANAGEMENT</li>
@@ -48,7 +48,7 @@
         <!-- Summary Cards -->
         <div class="summary-cards">
             <div class="summary-card card-active">
-                <div class="card-icon">🏥</div>
+                <div class="card-icon">🟢</div>
                 <div class="card-info">
                     <div class="card-number" id="activeCount">0</div>
                     <div class="card-label">Active In-Clinic</div>
@@ -64,7 +64,7 @@
                 </div>
             </div>
             <div class="summary-card card-total">
-                <div class="card-icon">📋</div>
+                <div class="card-icon">🗒</div>
                 <div class="card-info">
                     <div class="card-number" id="totalCount">0</div>
                     <div class="card-label">Total Visits</div>
@@ -195,17 +195,5 @@
     </div>
 
     <script src="/admin-side/js/Report.js"></script>
-    <script>
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const mainContent = document.querySelector('.main-content');
-            sidebar.classList.toggle('collapsed');
-            if (sidebar.classList.contains('collapsed')) {
-                mainContent.style.width = "calc(100vw - 80px)";
-            } else {
-                mainContent.style.width = "calc(100vw - 260px)";
-            }
-        }
-    </script>
 </body>
 </html>

@@ -1,9 +1,11 @@
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express = require('express');
 const path = require('path');
 const { exec } = require('child_process'); 
 const db = require('./db'); 
 const bcrypt = require('bcrypt');
 const ExcelJS = require('exceljs');
+const { sendPasswordResetCode, maskEmail } = require('./mailer');
 const app = express();
 const PORT = 3000;
 
@@ -406,26 +408,36 @@ app.post('/api/admin-logout', (req, res) => {
 // --- FORGOT PASSWORD ROUTES ---
 app.post('/api/forgot-password', (req, res) => {
     const { username } = req.body;
-    db.query("SELECT * FROM admins WHERE username = ?", [username], (err, result) => {
+    db.query("SELECT * FROM admins WHERE username = ?", [username], async (err, result) => {
         if (err) return res.status(500).json(err);
-        
-        if (result.length > 0) {
-            const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-            db.query("UPDATE admins SET reset_code = ? WHERE username = ?", [resetCode, username], (updateErr) => {
-                if (updateErr) return res.status(500).json(updateErr);
-
-                console.log(`\n=================================================`);
-                console.log(`🚨 PASSWORD RESET REQUESTED 🚨`);
-                console.log(`Admin Username: ${username}`);
-                console.log(`Use this 6-Digit Code in the app: ${resetCode}`);
-                console.log(`=================================================\n`);
-
-                res.status(200).json({ message: "Code generated! Check the terminal." });
-            });
-        } else {
-            res.status(404).json({ message: "Username not found" });
+        if (result.length === 0) {
+            return res.status(404).json({ message: "Username not found" });
         }
+
+        const admin = result[0];
+        if (!admin.email) {
+            return res.status(400).json({ message: "No personal email is registered for this account." });
+        }
+
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        db.query("UPDATE admins SET reset_code = ? WHERE username = ?", [resetCode, username], async (updateErr) => {
+            if (updateErr) return res.status(500).json(updateErr);
+
+            try {
+                await sendPasswordResetCode(admin.email, resetCode, admin.fullname);
+                res.status(200).json({
+                    message: "Verification code sent to your personal email.",
+                    maskedEmail: maskEmail(admin.email)
+                });
+            } catch (mailErr) {
+                console.error("Password reset email error:", mailErr);
+                res.status(500).json({
+                    message: mailErr.message || "Failed to send verification email. Please try again later."
+                });
+            }
+        });
     });
 });
 
@@ -695,64 +707,193 @@ app.put('/api/clients/:type/:id', (req, res) => {
 
 app.get('/api/export/:type', async (req, res) => {
     const type = req.params.type;
-    let sql = "";
-    
-    if (type === 'student') {
-        sql = `SELECT v.visit_date, v.srcode, s.fullname, v.time_in, v.time_out, v.blood_pressure, v.remarks FROM clinic_visits v JOIN students s ON v.srcode = s.srcode`;
-    } else if (type === 'employee') {
-        sql = `SELECT v.visit_date, v.employee_id, e.fullname, v.time_in, v.time_out, v.blood_pressure, v.remarks FROM employee_clinic_visit v JOIN employees e ON v.employee_id = e.employee_id`;
-    } else {
-        sql = `SELECT visit_date, idNo, fullname, time_in, time_out, purpose, blood_pressure, remarks FROM visitor_logs`;
+    if (!['student', 'employee', 'visitor'].includes(type)) {
+        return res.status(400).json({ error: 'Invalid client type' });
     }
 
-    db.query(sql, async (err, results) => {
-        if (err) return res.status(500).json(err);
-        
+    const queryAsync = (sql, p) => new Promise((resolve, reject) => {
+        db.query(sql, p || [], (err, r) => err ? reject(err) : resolve(r));
+    });
+
+    const formatDate = (d) => d ? new Date(d).toLocaleDateString() : 'N/A';
+    const yesNo = (v) => v ? 'Yes' : 'No';
+    const formatMedicines = (meds) => (meds || [])
+        .map(m => `${m.medicine_generic || 'N/A'}${m.medicine_brand ? ` (${m.medicine_brand})` : ''} - Qty:${m.quantity_box || 0} Pcs:${m.pieces || 0}`)
+        .join('; ');
+    const getStatus = (row) => {
+        if (!row.time_out) return 'In-Clinic';
+        const isCert = row.purpose_med_cert || row.purpose_pre_enrolment || (row.purpose && String(row.purpose).includes('Certificate'));
+        if (isCert && row.cert_status) return row.cert_status;
+        return 'Completed';
+    };
+
+    try {
+        let sql = '';
+        if (type === 'student') {
+            sql = `SELECT v.*, s.fullname as name, s.department, s.program
+                   FROM clinic_visits v JOIN students s ON v.srcode = s.srcode
+                   ORDER BY v.visit_date DESC, v.time_in DESC`;
+        } else if (type === 'employee') {
+            sql = `SELECT v.*, e.fullname as name, e.department, e.position, e.employment_type, e.employment_status
+                   FROM employee_clinic_visit v JOIN employees e ON v.employee_id = e.employee_id
+                   ORDER BY v.visit_date DESC, v.time_in DESC`;
+        } else {
+            sql = `SELECT *, fullname as name FROM visitor_logs ORDER BY visit_date DESC, time_in DESC`;
+        }
+
+        const rows = await queryAsync(sql);
+        const visitIds = rows.map(r => r.visit_id);
+        const userType = type === 'student' ? 'student' : type === 'employee' ? 'employee' : 'visitor';
+
+        let sympResults = [];
+        let medResults = [];
+        if (visitIds.length > 0) {
+            sympResults = await queryAsync(
+                'SELECT * FROM recorded_symptoms WHERE visit_id IN (?) AND user_type = ?',
+                [visitIds, userType]
+            );
+            medResults = await queryAsync(
+                'SELECT * FROM dispensed_medicines WHERE visit_id IN (?) AND user_type = ?',
+                [visitIds, userType]
+            );
+        }
+
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Records');
+        const worksheet = workbook.addWorksheet(
+            type === 'student' ? 'Students' : type === 'employee' ? 'Employees' : 'Visitors'
+        );
 
         if (type === 'student') {
             worksheet.columns = [
-                { header: 'Visit Date', key: 'visit_date', width: 15 },
-                { header: 'SR Code', key: 'srcode', width: 15 },
-                { header: 'Name', key: 'fullname', width: 25 },
-                { header: 'Time In', key: 'time_in', width: 15 },
-                { header: 'Time Out', key: 'time_out', width: 15 },
-                { header: 'Blood Pressure', key: 'blood_pressure', width: 15 },
-                { header: 'Remarks', key: 'remarks', width: 35 }
+                { header: 'Visit Date', key: 'visit_date', width: 14 },
+                { header: 'SR Code', key: 'srcode', width: 14 },
+                { header: 'Name', key: 'name', width: 28 },
+                { header: 'Department', key: 'department', width: 16 },
+                { header: 'Program', key: 'program', width: 22 },
+                { header: 'Age', key: 'age', width: 8 },
+                { header: 'Gender', key: 'gender', width: 14 },
+                { header: 'Special Needs', key: 'special_needs', width: 14 },
+                { header: 'Disability Type', key: 'pwd_type', width: 22 },
+                { header: 'Time In', key: 'time_in', width: 12 },
+                { header: 'Time Out', key: 'time_out', width: 12 },
+                { header: 'Status', key: 'dynamic_status', width: 14 },
+                { header: 'Blood Pressure', key: 'blood_pressure', width: 14 },
+                { header: 'Medical Consult/Medicine', key: 'purpose_medical_consult', width: 22 },
+                { header: 'Dental', key: 'purpose_dental', width: 10 },
+                { header: 'Dental Service', key: 'dental_service_type', width: 22 },
+                { header: 'Blood Pressure Visit', key: 'purpose_blood_pressure', width: 18 },
+                { header: 'Medical Certificate', key: 'purpose_med_cert', width: 18 },
+                { header: 'Certificate Type', key: 'cert_type', width: 22 },
+                { header: 'Pre-enrolment', key: 'purpose_pre_enrolment', width: 14 },
+                { header: 'Others', key: 'purpose_others', width: 20 },
+                { header: 'Certificate Status', key: 'cert_status', width: 18 },
+                { header: 'Is Confined', key: 'is_confined', width: 12 },
+                { header: 'Consideration', key: 'consideration', width: 25 },
+                { header: 'Remarks', key: 'remarks', width: 30 },
+                { header: 'Symptoms', key: 'symptoms', width: 40 },
+                { header: 'Medicines Dispensed', key: 'medicines', width: 50 },
+                { header: 'Signature', key: 'signature', width: 18 },
             ];
         } else if (type === 'employee') {
             worksheet.columns = [
-                { header: 'Visit Date', key: 'visit_date', width: 15 },
-                { header: 'Employee ID', key: 'employee_id', width: 15 },
-                { header: 'Name', key: 'fullname', width: 25 },
-                { header: 'Time In', key: 'time_in', width: 15 },
-                { header: 'Time Out', key: 'time_out', width: 15 },
-                { header: 'Blood Pressure', key: 'blood_pressure', width: 15 },
-                { header: 'Remarks', key: 'remarks', width: 35 }
+                { header: 'Visit Date', key: 'visit_date', width: 14 },
+                { header: 'Employee ID', key: 'employee_id', width: 14 },
+                { header: 'Name', key: 'name', width: 28 },
+                { header: 'Department', key: 'department', width: 16 },
+                { header: 'Position', key: 'position', width: 22 },
+                { header: 'Employment Type', key: 'employment_type', width: 16 },
+                { header: 'Employment Status', key: 'employment_status', width: 18 },
+                { header: 'Age', key: 'age', width: 8 },
+                { header: 'Gender', key: 'gender', width: 14 },
+                { header: 'Special Needs', key: 'special_needs', width: 14 },
+                { header: 'Disability Type', key: 'pwd_type', width: 22 },
+                { header: 'Time In', key: 'time_in', width: 12 },
+                { header: 'Time Out', key: 'time_out', width: 12 },
+                { header: 'Status', key: 'dynamic_status', width: 14 },
+                { header: 'Blood Pressure', key: 'blood_pressure', width: 14 },
+                { header: 'Purpose of Visit', key: 'purpose_of_visit', width: 30 },
+                { header: 'Dental Service', key: 'dental_service_type', width: 22 },
+                { header: 'Certificate Type', key: 'certificate_type', width: 22 },
+                { header: 'Others Specify', key: 'others_specify', width: 22 },
+                { header: 'Certificate Status', key: 'cert_status', width: 18 },
+                { header: 'Is Confined', key: 'is_confined', width: 12 },
+                { header: 'Consideration', key: 'consideration', width: 25 },
+                { header: 'Remarks', key: 'remarks', width: 30 },
+                { header: 'Symptoms', key: 'symptoms', width: 40 },
+                { header: 'Medicines Dispensed', key: 'medicines', width: 50 },
+                { header: 'Signature', key: 'signature', width: 18 },
             ];
         } else {
             worksheet.columns = [
-                { header: 'Visit Date', key: 'visit_date', width: 15 },
-                { header: 'ID Number', key: 'idNo', width: 15 },
-                { header: 'Name', key: 'fullname', width: 25 },
-                { header: 'Time In', key: 'time_in', width: 15 },
-                { header: 'Time Out', key: 'time_out', width: 15 },
-                { header: 'Purpose', key: 'purpose', width: 20 },
-                { header: 'Blood Pressure', key: 'blood_pressure', width: 15 },
-                { header: 'Remarks', key: 'remarks', width: 35 }
+                { header: 'Visit Date', key: 'visit_date', width: 14 },
+                { header: 'ID No.', key: 'idNo', width: 12 },
+                { header: 'Name', key: 'name', width: 28 },
+                { header: 'Birthday', key: 'birthday', width: 14 },
+                { header: 'Age', key: 'age', width: 8 },
+                { header: 'Gender', key: 'gender', width: 14 },
+                { header: 'Special Needs', key: 'special_needs', width: 14 },
+                { header: 'Disability Type', key: 'pwd_type', width: 22 },
+                { header: 'Purpose', key: 'purpose', width: 25 },
+                { header: 'Certificate Type', key: 'certificate_type', width: 22 },
+                { header: 'Others Specify', key: 'others_specify', width: 22 },
+                { header: 'Time In', key: 'time_in', width: 12 },
+                { header: 'Time Out', key: 'time_out', width: 12 },
+                { header: 'Status', key: 'dynamic_status', width: 14 },
+                { header: 'Blood Pressure', key: 'blood_pressure', width: 14 },
+                { header: 'Certificate Status', key: 'cert_status', width: 18 },
+                { header: 'Is Confined', key: 'is_confined', width: 12 },
+                { header: 'Consideration', key: 'consideration', width: 25 },
+                { header: 'Remarks', key: 'remarks', width: 30 },
+                { header: 'Symptoms', key: 'symptoms', width: 40 },
+                { header: 'Medicines Dispensed', key: 'medicines', width: 50 },
+                { header: 'Signature', key: 'signature', width: 18 },
             ];
         }
 
         worksheet.getRow(1).font = { bold: true };
-        worksheet.addRows(results);
 
+        rows.forEach(r => {
+            const symptoms = sympResults
+                .filter(s => s.visit_id === r.visit_id)
+                .map(s => s.symptom_name)
+                .join(', ');
+            const medicines = formatMedicines(
+                medResults.filter(m => m.visit_id === r.visit_id)
+            );
+
+            const base = {
+                ...r,
+                visit_date: formatDate(r.visit_date),
+                birthday: r.birthday ? formatDate(r.birthday) : (r.birthday || 'N/A'),
+                dynamic_status: getStatus(r),
+                symptoms: symptoms || 'N/A',
+                medicines: medicines || 'N/A',
+                signature: r.signature ? 'On file' : 'No signature',
+            };
+
+            if (type === 'student') {
+                worksheet.addRow({
+                    ...base,
+                    purpose_medical_consult: yesNo(r.purpose_medical_consult),
+                    purpose_dental: yesNo(r.purpose_dental),
+                    purpose_blood_pressure: yesNo(r.purpose_blood_pressure),
+                    purpose_med_cert: yesNo(r.purpose_med_cert),
+                    purpose_pre_enrolment: yesNo(r.purpose_pre_enrolment),
+                });
+            } else {
+                worksheet.addRow(base);
+            }
+        });
+
+        const sheetLabel = type === 'student' ? 'Students' : type === 'employee' ? 'Employees' : 'Visitors';
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename="${type}_records.xlsx"`);
-
+        res.setHeader('Content-Disposition', `attachment; filename="BSU_${sheetLabel}_Records.xlsx"`);
         await workbook.xlsx.write(res);
         res.end();
-    });
+    } catch (err) {
+        console.error('Client export error:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.get('/api/export-single/:type/:id', async (req, res) => {
@@ -1029,7 +1170,7 @@ app.delete('/api/inventory/delete-multiple', (req, res) => {
     });
 });
 
-// REPORT EXPORT — full client details + symptoms + medicines
+// REPORT EXPORT — full client details + symptoms + medicines + embedded pie charts
 app.get('/api/export-report', async (req, res) => {
     const { from, to } = req.query;
 
@@ -1042,6 +1183,47 @@ app.get('/api/export-report', async (req, res) => {
         db.query(sql, p, (err, r) => err ? reject(err) : resolve(r));
     });
 
+    // ── Chart generator helper ──────────────────────────────────
+    async function generatePieChartBuffer(title, counts) {
+        const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
+        const labels = Object.keys(counts);
+        const values = Object.values(counts);
+        const total  = values.reduce((a, b) => a + b, 0);
+        if (total === 0) return null;
+
+        const COLORS = ['#50C878','#FFCC00','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899','#14b8a6'];
+
+        const canvas = new ChartJSNodeCanvas({ width: 500, height: 380, backgroundColour: 'white' });
+        const buffer = await canvas.renderToBuffer({
+            type: 'pie',
+            data: {
+                labels: labels.map((l, i) => `${l} (${total > 0 ? ((values[i]/total)*100).toFixed(1) : 0}%)`),
+                datasets: [{
+                    data: values,
+                    backgroundColor: COLORS.slice(0, labels.length),
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: title,
+                        font: { size: 16, weight: 'bold' },
+                        padding: { bottom: 16 }
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: { font: { size: 11 }, padding: 12 }
+                    }
+                }
+            }
+        });
+        return buffer;
+    }
+
     try {
         const workbook = new ExcelJS.Workbook();
 
@@ -1052,7 +1234,6 @@ app.get('/api/export-report', async (req, res) => {
              WHERE 1=1 ${dateFilter} ORDER BY v.visit_date DESC, v.time_in DESC`,
             params
         );
-
         const sIds = sRows.map(r => r.visit_id);
         let sSymps = [], sMeds = [];
         if (sIds.length > 0) {
@@ -1062,35 +1243,34 @@ app.get('/api/export-report', async (req, res) => {
 
         const ws1 = workbook.addWorksheet('Students');
         ws1.columns = [
-            { header: 'Visit Date',          key: 'visit_date',            width: 14 },
-            { header: 'SR Code',             key: 'srcode',                width: 14 },
-            { header: 'Name',                key: 'name',                  width: 28 },
-            { header: 'Department',          key: 'department',            width: 16 },
-            { header: 'Program',             key: 'program',               width: 22 },
-            { header: 'Age',                 key: 'age',                   width: 8  },
-            { header: 'Gender',              key: 'gender',                width: 14 },
-            { header: 'Special Needs',       key: 'special_needs',         width: 14 },
-            { header: 'Disability Type',     key: 'pwd_type',              width: 22 },
-            { header: 'Time In',             key: 'time_in',               width: 12 },
-            { header: 'Time Out',            key: 'time_out',              width: 12 },
-            { header: 'Blood Pressure',      key: 'blood_pressure',        width: 14 },
-            { header: 'Medical Consult',     key: 'purpose_medical_consult', width: 16 },
-            { header: 'Dental',              key: 'purpose_dental',        width: 10 },
-            { header: 'Dental Service',      key: 'dental_service_type',   width: 22 },
-            { header: 'Blood Pressure Visit',key: 'purpose_blood_pressure', width: 18 },
-            { header: 'Med Certificate',     key: 'purpose_med_cert',      width: 16 },
-            { header: 'Cert Type',           key: 'cert_type',             width: 22 },
-            { header: 'Pre-enrolment',       key: 'purpose_pre_enrolment', width: 14 },
-            { header: 'Others',              key: 'purpose_others',        width: 20 },
-            { header: 'Certificate Status',  key: 'cert_status',           width: 18 },
-            { header: 'Is Confined',         key: 'is_confined',           width: 12 },
-            { header: 'Consideration',       key: 'consideration',         width: 25 },
-            { header: 'Remarks',             key: 'remarks',               width: 30 },
-            { header: 'Symptoms',            key: 'symptoms',              width: 40 },
-            { header: 'Medicines Dispensed', key: 'medicines',             width: 50 },
+            { header: 'Visit Date',           key: 'visit_date',              width: 14 },
+            { header: 'SR Code',              key: 'srcode',                  width: 14 },
+            { header: 'Name',                 key: 'name',                    width: 28 },
+            { header: 'Department',           key: 'department',              width: 16 },
+            { header: 'Program',              key: 'program',                 width: 22 },
+            { header: 'Age',                  key: 'age',                     width: 8  },
+            { header: 'Gender',               key: 'gender',                  width: 14 },
+            { header: 'Special Needs',        key: 'special_needs',           width: 14 },
+            { header: 'Disability Type',      key: 'pwd_type',                width: 22 },
+            { header: 'Time In',              key: 'time_in',                 width: 12 },
+            { header: 'Time Out',             key: 'time_out',                width: 12 },
+            { header: 'Blood Pressure',       key: 'blood_pressure',          width: 14 },
+            { header: 'Medical Consult',      key: 'purpose_medical_consult', width: 16 },
+            { header: 'Dental',               key: 'purpose_dental',          width: 10 },
+            { header: 'Dental Service',       key: 'dental_service_type',     width: 22 },
+            { header: 'Blood Pressure Visit', key: 'purpose_blood_pressure',  width: 18 },
+            { header: 'Med Certificate',      key: 'purpose_med_cert',        width: 16 },
+            { header: 'Cert Type',            key: 'cert_type',               width: 22 },
+            { header: 'Pre-enrolment',        key: 'purpose_pre_enrolment',   width: 14 },
+            { header: 'Others',               key: 'purpose_others',          width: 20 },
+            { header: 'Certificate Status',   key: 'cert_status',             width: 18 },
+            { header: 'Is Confined',          key: 'is_confined',             width: 12 },
+            { header: 'Consideration',        key: 'consideration',           width: 25 },
+            { header: 'Remarks',              key: 'remarks',                 width: 30 },
+            { header: 'Symptoms',             key: 'symptoms',                width: 40 },
+            { header: 'Medicines Dispensed',  key: 'medicines',               width: 50 },
         ];
         ws1.getRow(1).font = { bold: true };
-
         sRows.forEach(r => {
             const symptoms = sSymps.filter(s => s.visit_id === r.visit_id).map(s => s.symptom_name).join(', ');
             const medicines = sMeds.filter(m => m.visit_id === r.visit_id)
@@ -1104,8 +1284,7 @@ app.get('/api/export-report', async (req, res) => {
                 purpose_blood_pressure:  r.purpose_blood_pressure  ? 'Yes' : 'No',
                 purpose_med_cert:        r.purpose_med_cert        ? 'Yes' : 'No',
                 purpose_pre_enrolment:   r.purpose_pre_enrolment   ? 'Yes' : 'No',
-                symptoms,
-                medicines
+                symptoms, medicines
             });
         });
 
@@ -1116,54 +1295,46 @@ app.get('/api/export-report', async (req, res) => {
              WHERE 1=1 ${dateFilter} ORDER BY v.visit_date DESC, v.time_in DESC`,
             params
         );
-
         const eIds = eRows.map(r => r.visit_id);
         let eSymps = [], eMeds = [];
         if (eIds.length > 0) {
             eSymps = await queryAsync("SELECT * FROM recorded_symptoms WHERE visit_id IN (?) AND user_type='employee'", [eIds]);
             eMeds  = await queryAsync("SELECT * FROM dispensed_medicines WHERE visit_id IN (?) AND user_type='employee'", [eIds]);
         }
-
         const ws2 = workbook.addWorksheet('Employees');
         ws2.columns = [
-            { header: 'Visit Date',          key: 'visit_date',       width: 14 },
-            { header: 'Employee ID',         key: 'employee_id',      width: 14 },
-            { header: 'Name',                key: 'name',             width: 28 },
-            { header: 'Department',          key: 'department',       width: 16 },
-            { header: 'Position',            key: 'position',         width: 22 },
-            { header: 'Employment Type',     key: 'employment_type',  width: 16 },
-            { header: 'Employment Status',   key: 'employment_status',width: 18 },
-            { header: 'Age',                 key: 'age',              width: 8  },
-            { header: 'Gender',              key: 'gender',           width: 14 },
-            { header: 'Special Needs',       key: 'special_needs',    width: 14 },
-            { header: 'Disability Type',     key: 'pwd_type',         width: 22 },
-            { header: 'Time In',             key: 'time_in',          width: 12 },
-            { header: 'Time Out',            key: 'time_out',         width: 12 },
-            { header: 'Blood Pressure',      key: 'blood_pressure',   width: 14 },
-            { header: 'Purpose of Visit',    key: 'purpose_of_visit', width: 30 },
+            { header: 'Visit Date',          key: 'visit_date',          width: 14 },
+            { header: 'Employee ID',         key: 'employee_id',         width: 14 },
+            { header: 'Name',                key: 'name',                width: 28 },
+            { header: 'Department',          key: 'department',          width: 16 },
+            { header: 'Position',            key: 'position',            width: 22 },
+            { header: 'Employment Type',     key: 'employment_type',     width: 16 },
+            { header: 'Employment Status',   key: 'employment_status',   width: 18 },
+            { header: 'Age',                 key: 'age',                 width: 8  },
+            { header: 'Gender',              key: 'gender',              width: 14 },
+            { header: 'Special Needs',       key: 'special_needs',       width: 14 },
+            { header: 'Disability Type',     key: 'pwd_type',            width: 22 },
+            { header: 'Time In',             key: 'time_in',             width: 12 },
+            { header: 'Time Out',            key: 'time_out',            width: 12 },
+            { header: 'Blood Pressure',      key: 'blood_pressure',      width: 14 },
+            { header: 'Purpose of Visit',    key: 'purpose_of_visit',    width: 30 },
             { header: 'Dental Service',      key: 'dental_service_type', width: 22 },
-            { header: 'Certificate Type',    key: 'certificate_type', width: 22 },
-            { header: 'Others Specify',      key: 'others_specify',   width: 22 },
-            { header: 'Certificate Status',  key: 'cert_status',      width: 18 },
-            { header: 'Is Confined',         key: 'is_confined',      width: 12 },
-            { header: 'Consideration',       key: 'consideration',    width: 25 },
-            { header: 'Remarks',             key: 'remarks',          width: 30 },
-            { header: 'Symptoms',            key: 'symptoms',         width: 40 },
-            { header: 'Medicines Dispensed', key: 'medicines',        width: 50 },
+            { header: 'Certificate Type',    key: 'certificate_type',    width: 22 },
+            { header: 'Others Specify',      key: 'others_specify',      width: 22 },
+            { header: 'Certificate Status',  key: 'cert_status',         width: 18 },
+            { header: 'Is Confined',         key: 'is_confined',         width: 12 },
+            { header: 'Consideration',       key: 'consideration',       width: 25 },
+            { header: 'Remarks',             key: 'remarks',             width: 30 },
+            { header: 'Symptoms',            key: 'symptoms',            width: 40 },
+            { header: 'Medicines Dispensed', key: 'medicines',           width: 50 },
         ];
         ws2.getRow(1).font = { bold: true };
-
         eRows.forEach(r => {
             const symptoms = eSymps.filter(s => s.visit_id === r.visit_id).map(s => s.symptom_name).join(', ');
             const medicines = eMeds.filter(m => m.visit_id === r.visit_id)
                 .map(m => `${m.medicine_generic}${m.medicine_brand ? ' ('+m.medicine_brand+')' : ''} - Qty:${m.quantity_box||0} Pcs:${m.pieces||0}`)
                 .join('; ');
-            ws2.addRow({
-                ...r,
-                visit_date: r.visit_date ? new Date(r.visit_date).toLocaleDateString() : 'N/A',
-                symptoms,
-                medicines
-            });
+            ws2.addRow({ ...r, visit_date: r.visit_date ? new Date(r.visit_date).toLocaleDateString() : 'N/A', symptoms, medicines });
         });
 
         // ── Sheet 3: Visitors ──────────────────────────────────
@@ -1171,51 +1342,159 @@ app.get('/api/export-report', async (req, res) => {
             `SELECT * FROM visitor_logs WHERE 1=1 ${dateFilter} ORDER BY visit_date DESC, time_in DESC`,
             params
         );
-
         const vIds = vRows.map(r => r.visit_id);
         let vSymps = [], vMeds = [];
         if (vIds.length > 0) {
             vSymps = await queryAsync("SELECT * FROM recorded_symptoms WHERE visit_id IN (?) AND user_type='visitor'", [vIds]);
             vMeds  = await queryAsync("SELECT * FROM dispensed_medicines WHERE visit_id IN (?) AND user_type='visitor'", [vIds]);
         }
-
         const ws3 = workbook.addWorksheet('Visitors');
         ws3.columns = [
-            { header: 'Visit Date',          key: 'visit_date',    width: 14 },
-            { header: 'ID No.',              key: 'idNo',          width: 12 },
-            { header: 'Name',                key: 'fullname',      width: 28 },
-            { header: 'Birthday',            key: 'birthday',      width: 14 },
-            { header: 'Age',                 key: 'age',           width: 8  },
-            { header: 'Gender',              key: 'gender',        width: 14 },
-            { header: 'Special Needs',       key: 'special_needs', width: 14 },
-            { header: 'Disability Type',     key: 'pwd_type',      width: 22 },
-            { header: 'Purpose',             key: 'purpose',       width: 25 },
+            { header: 'Visit Date',          key: 'visit_date',       width: 14 },
+            { header: 'ID No.',              key: 'idNo',             width: 12 },
+            { header: 'Name',                key: 'fullname',         width: 28 },
+            { header: 'Birthday',            key: 'birthday',         width: 14 },
+            { header: 'Age',                 key: 'age',              width: 8  },
+            { header: 'Gender',              key: 'gender',           width: 14 },
+            { header: 'Special Needs',       key: 'special_needs',    width: 14 },
+            { header: 'Disability Type',     key: 'pwd_type',         width: 22 },
+            { header: 'Purpose',             key: 'purpose',          width: 25 },
             { header: 'Certificate Type',    key: 'certificate_type', width: 22 },
-            { header: 'Others Specify',      key: 'others_specify',width: 22 },
-            { header: 'Time In',             key: 'time_in',       width: 12 },
-            { header: 'Time Out',            key: 'time_out',      width: 12 },
-            { header: 'Blood Pressure',      key: 'blood_pressure',width: 14 },
-            { header: 'Certificate Status',  key: 'cert_status',   width: 18 },
-            { header: 'Is Confined',         key: 'is_confined',   width: 12 },
-            { header: 'Consideration',       key: 'consideration', width: 25 },
-            { header: 'Remarks',             key: 'remarks',       width: 30 },
-            { header: 'Symptoms',            key: 'symptoms',      width: 40 },
-            { header: 'Medicines Dispensed', key: 'medicines',     width: 50 },
+            { header: 'Others Specify',      key: 'others_specify',   width: 22 },
+            { header: 'Time In',             key: 'time_in',          width: 12 },
+            { header: 'Time Out',            key: 'time_out',         width: 12 },
+            { header: 'Blood Pressure',      key: 'blood_pressure',   width: 14 },
+            { header: 'Certificate Status',  key: 'cert_status',      width: 18 },
+            { header: 'Is Confined',         key: 'is_confined',      width: 12 },
+            { header: 'Consideration',       key: 'consideration',    width: 25 },
+            { header: 'Remarks',             key: 'remarks',          width: 30 },
+            { header: 'Symptoms',            key: 'symptoms',         width: 40 },
+            { header: 'Medicines Dispensed', key: 'medicines',        width: 50 },
         ];
         ws3.getRow(1).font = { bold: true };
-
         vRows.forEach(r => {
             const symptoms = vSymps.filter(s => s.visit_id === r.visit_id).map(s => s.symptom_name).join(', ');
             const medicines = vMeds.filter(m => m.visit_id === r.visit_id)
                 .map(m => `${m.medicine_generic}${m.medicine_brand ? ' ('+m.medicine_brand+')' : ''} - Qty:${m.quantity_box||0} Pcs:${m.pieces||0}`)
                 .join('; ');
-            ws3.addRow({
-                ...r,
-                visit_date: r.visit_date ? new Date(r.visit_date).toLocaleDateString() : 'N/A',
-                symptoms,
-                medicines
-            });
+            ws3.addRow({ ...r, visit_date: r.visit_date ? new Date(r.visit_date).toLocaleDateString() : 'N/A', symptoms, medicines });
         });
+
+        // ── Build counts for charts & summary ──────────────────
+        const allRows = [
+            ...sRows.map(r => ({ ...r, clientType: 'Student' })),
+            ...eRows.map(r => ({ ...r, clientType: 'Employee' })),
+            ...vRows.map(r => ({ ...r, clientType: 'Visitor' }))
+        ];
+        const allMeds = [...sMeds, ...eMeds, ...vMeds];
+        const visitIdsWithMeds = new Set(allMeds.map(m => m.visit_id));
+
+        const genderCounts = {};
+        const clientTypeCounts = { Student: 0, Employee: 0, Visitor: 0 };
+        const purposeCounts = {};
+        const medicineCounts = {};
+        const addCount = (map, key, amt = 1) => {
+            const k = (key || 'Unknown').toString().trim() || 'Unknown';
+            map[k] = (map[k] || 0) + amt;
+        };
+        allRows.forEach(r => {
+            addCount(genderCounts, r.gender || 'Unknown');
+            addCount(clientTypeCounts, r.clientType);
+            if (r.clientType === 'Student') {
+                if (r.purpose_medical_consult) addCount(purposeCounts, 'Medical Consult');
+                if (r.purpose_dental)          addCount(purposeCounts, 'Dental');
+                if (r.purpose_blood_pressure)  addCount(purposeCounts, 'Blood Pressure');
+                if (r.purpose_med_cert)        addCount(purposeCounts, 'Medical Certificate');
+                if (r.purpose_pre_enrolment)   addCount(purposeCounts, 'Pre-enrolment');
+                if (r.purpose_others)          addCount(purposeCounts, 'Others');
+            } else if (r.clientType === 'Employee') {
+                (r.purpose_of_visit || '').split(',').map(p => p.trim()).filter(Boolean).forEach(p => addCount(purposeCounts, p));
+            } else {
+                addCount(purposeCounts, r.purpose || 'Unknown');
+            }
+        });
+        allMeds.forEach(m => {
+            addCount(medicineCounts, m.medicine_generic || m.medicine_brand || 'Unknown', parseInt(m.quantity_box, 10) || 1);
+        });
+
+        // ── Sheet 4: Report Numbers ────────────────────────────
+        const ws4 = workbook.addWorksheet('Report Numbers');
+        ws4.columns = [
+            { header: 'Metric', key: 'metric', width: 34 },
+            { header: 'Value',  key: 'value',  width: 20 }
+        ];
+        ws4.getRow(1).font = { bold: true };
+        ws4.addRows([
+            { metric: 'Period From',                    value: from || 'All time' },
+            { metric: 'Period To',                      value: to   || 'All time' },
+            { metric: 'Total Visits',                   value: allRows.length },
+            { metric: 'Active In-Clinic',               value: allRows.filter(r => !r.time_out).length },
+            { metric: 'Timed Out (Completed)',          value: allRows.filter(r => !!r.time_out).length },
+            { metric: 'Confined Cases',                 value: allRows.filter(r => String(r.is_confined||'').toLowerCase()==='yes').length },
+            { metric: 'Visits with Medicine Dispensed', value: allRows.filter(r => visitIdsWithMeds.has(r.visit_id)).length },
+            { metric: 'Student Visits',                 value: clientTypeCounts.Student  || 0 },
+            { metric: 'Employee Visits',                value: clientTypeCounts.Employee || 0 },
+            { metric: 'Visitor Visits',                 value: clientTypeCounts.Visitor  || 0 },
+            { metric: 'Male',                           value: genderCounts.Male || 0 },
+            { metric: 'Female',                         value: genderCounts.Female || 0 },
+            { metric: 'Prefer not to say',              value: genderCounts['Prefer not to say'] || 0 },
+            { metric: 'Others (Gender)',                value: genderCounts.Others || 0 },
+            { metric: 'Unknown (Gender)',               value: genderCounts.Unknown || 0 },
+        ]);
+
+        // ── Sheet 5: Pie Charts (embedded PNG images) ──────────
+        const wsCharts = workbook.addWorksheet('Pie Charts');
+        wsCharts.getCell('A1').value = `BSU Health Services — Report Charts (${from || 'All'} to ${to || 'All'})`;
+        wsCharts.getCell('A1').font = { bold: true, size: 14, color: { argb: 'FF16a34a' } };
+
+        const chartDefs = [
+            { title: 'Gender Distribution',    counts: genderCounts,     row: 3,  col: 1 },
+            { title: 'Client Type',            counts: clientTypeCounts,  row: 3,  col: 10 },
+            { title: 'Purpose of Visit',       counts: purposeCounts,     row: 23, col: 1 },
+            { title: 'Medicines Dispensed',    counts: medicineCounts,    row: 23, col: 10 },
+        ];
+
+        for (const def of chartDefs) {
+            const buf = await generatePieChartBuffer(def.title, def.counts);
+            if (!buf) {
+                // No data — write a note instead
+                wsCharts.getCell(def.row, def.col).value = `${def.title}: No data for this period.`;
+                wsCharts.getCell(def.row, def.col).font = { italic: true, color: { argb: 'FF9ca3af' } };
+                continue;
+            }
+            const imageId = workbook.addImage({ buffer: buf, extension: 'png' });
+            wsCharts.addImage(imageId, {
+                tl: { col: def.col - 1, row: def.row - 1 },
+                ext: { width: 480, height: 360 }
+            });
+        }
+
+        // Set column widths so charts display nicely
+        for (let i = 1; i <= 19; i++) wsCharts.getColumn(i).width = 9;
+
+        // ── Sheet 6: Pie Chart Raw Data ────────────────────────
+        const ws6 = workbook.addWorksheet('Chart Data');
+        ws6.getCell('A1').value = 'Raw data used to generate the pie charts above.';
+        ws6.getCell('A1').font = { italic: true, color: { argb: 'FF6B7280' } };
+
+        const writeCategoryTable = (title, startRow, counts) => {
+            ws6.getCell(`A${startRow}`).value = title;
+            ws6.getCell(`A${startRow}`).font = { bold: true };
+            ws6.getCell(`A${startRow + 1}`).value = 'Category';
+            ws6.getCell(`B${startRow + 1}`).value = 'Count';
+            ws6.getRow(startRow + 1).font = { bold: true };
+            const entries = Object.entries(counts).filter(([, v]) => v > 0);
+            entries.forEach(([k, v], idx) => {
+                ws6.getCell(`A${startRow + 2 + idx}`).value = k;
+                ws6.getCell(`B${startRow + 2 + idx}`).value = v;
+            });
+            return startRow + 4 + entries.length;
+        };
+        let rowPtr = 3;
+        rowPtr = writeCategoryTable('Gender Distribution',          rowPtr, genderCounts);
+        rowPtr = writeCategoryTable('Client Type Distribution',     rowPtr, clientTypeCounts);
+        rowPtr = writeCategoryTable('Purpose of Visit Distribution',rowPtr, purposeCounts);
+        writeCategoryTable('Medicines Dispensed Distribution',      rowPtr, medicineCounts);
 
         const filename = `BSU_Report_${from || 'all'}_to_${to || 'all'}.xlsx`;
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -1227,6 +1506,46 @@ app.get('/api/export-report', async (req, res) => {
         console.error("Report export error:", err);
         res.status(500).json({ error: err.message });
     }
+});
+
+// --- DATABASE BACKUP ROUTE ---
+app.get('/api/admin/backup-database', (req, res) => {
+    const { exec } = require('child_process');
+
+    const host     = process.env.DB_HOST     || 'localhost';
+    const user     = process.env.DB_USER     || 'root';
+    const password = process.env.DB_PASSWORD || '';
+    const database = process.env.DB_NAME     || 'bsu_clinic';
+
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+    const filename = `BSU_Clinic_Backup_${timestamp}.sql`;
+
+    // Use full XAMPP path — works even without PATH environment variable
+    const mysqldumpPath = `"C:\\xampp\\mysql\\bin\\mysqldump"`;
+
+    // Build password argument — omit -p flag entirely if password is empty
+    const passArg = password ? `-p"${password}"` : '';
+    const cmd = `${mysqldumpPath} -h ${host} -u ${user} ${passArg} --single-transaction --routines --triggers --add-drop-table ${database}`;
+
+    exec(cmd, { maxBuffer: 1024 * 1024 * 50 }, (err, stdout, stderr) => {
+        if (err) {
+            console.error('Backup error:', err.message);
+            console.error('Stderr:', stderr);
+            return res.status(500).json({ 
+                error: 'Backup failed. Make sure mysqldump is installed and accessible.', 
+                detail: err.message 
+            });
+        }
+
+        if (!stdout || stdout.trim().length === 0) {
+            return res.status(500).json({ error: 'Backup produced empty output. Check database name and credentials.' });
+        }
+
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(stdout);
+    });
 });
 
 // --- SERVER START & AUTO-OPEN ---

@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin Profile</title>
-    <link rel="stylesheet" href="/admin-side/css/DashboardShared.css?v=4">
-    <link rel="stylesheet" href="/admin-side/css/Profile.css?v=4">
+    <link rel="stylesheet" href="/admin-side/css/DashboardShared.css">
+    <link rel="stylesheet" href="/admin-side/css/Profile.css">
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 </head>
 <body>
     <div class="sidebar">
         <div>
-            <div class="sidebar-header" onclick="toggleSidebar()" style="cursor:pointer; user-select:none;">☰</div>
+            <button type="button" class="sidebar-header" onclick="toggleSidebar()" aria-label="Toggle sidebar">☰</button>
             <ul class="sidebar-menu">
                 <li class="active">PROFILE</li>
                 <li onclick="window.location.href='/admin/clients'">CLIENT MANAGEMENT</li>
@@ -22,7 +22,22 @@
     </div>
 
     <div class="main-content">
-        <h1 class="page-title">PROFILE</h1>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0;">
+            <h1 class="page-title" style="margin:0;">PROFILE</h1>
+            <button onclick="downloadBackup()" id="backupBtn" title="Download full database backup" style="
+                display: flex; align-items: center; gap: 8px;
+                background: #1d4ed8; color: white; border: none;
+                padding: 10px 18px; border-radius: 8px; font-weight: 700;
+                font-size: 13px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+                transition: background 0.2s;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Backup Database
+            </button>
+        </div>
         
         <div class="profile-header">
             <div class="avatar-container" onclick="document.getElementById('avatarUpload').click()" title="Click to change avatar">

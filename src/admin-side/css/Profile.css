@@ -3,6 +3,11 @@
 /* Forces the grey dashboard background to white just for the profile page */
 .main-content { background-color: #ffffff !important; }
 
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
 .profile-header { 
     display: flex; align-items: center; gap: 30px; margin-bottom: 50px; 
     width: 100%; box-sizing: border-box;
@@ -116,40 +121,6 @@
     border-radius: 6px; font-size: 14px; box-sizing: border-box;
 }
 .modal-input:focus { outline: none; border-color: #50C878; box-shadow: 0 0 0 3px rgba(80,200,120,0.15); }
-
-/* ── IMPROVED SIDEBAR TOGGLE & TILT ANIMATION ── */
-.sidebar {
-    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar-menu li {
-    transition: transform 0.4s ease, opacity 0.3s ease;
-    transform-origin: left center;
-}
-
-/* The "Tilting" animation when hiding */
-.sidebar-menu li.tilt-out {
-    transform: rotateX(90deg) translateX(-20px);
-    opacity: 0;
-    pointer-events: none;
-}
-
-.sidebar.collapsed {
-    width: 60px; /* Slimmer when hidden */
-    min-width: 60px;
-}
-
-/* Hide everything inside the sidebar when collapsed */
-.sidebar.collapsed .sidebar-menu,
-.sidebar.collapsed .logout-btn,
-.sidebar.collapsed .sidebar-header::after {
-    display: none;
-}
-
-/* Adjust main content transition for smoothness */
-.main-content {
-    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
 
 @media (max-width: 768px) {
     .profile-header { flex-direction: column; text-align: center; }
